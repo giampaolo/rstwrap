@@ -568,10 +568,18 @@ def wrap_rst(source, width=WIDTH):
             out.extend(emitted)
             continue
 
-        # List item run (bullet or enumerated). Only recognised at block
-        # start (preceded by blank line or document start) -- a bullet
-        # mid-paragraph is prose continuation.
-        if (not out or not out[-1].strip()) and _match_list_item(raw):
+        # List item run (bullet or enumerated). Recognised at block
+        # boundaries: blank line, section underline, or after indented
+        # content (nested body, continuation paragraph). A bullet that
+        # directly follows unindented prose is a line-wrap continuation,
+        # not a new list.
+        at_block_start = (
+            not out
+            or not out[-1].strip()
+            or _is_underline(out[-1])
+            or out[-1][:1] in {" ", "\t"}
+        )
+        if at_block_start and _match_list_item(raw):
             emitted, i = _handle_list_run(lines, i, n, width)
             out.extend(emitted)
             continue
