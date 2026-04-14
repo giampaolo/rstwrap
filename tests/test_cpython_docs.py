@@ -5,7 +5,6 @@ directory and reused across runs. The clone only happens when this
 test class is collected.
 """
 
-import re
 import subprocess
 from pathlib import Path
 
@@ -14,27 +13,11 @@ import pytest
 from rst_wrap_lines import WIDTH
 from rst_wrap_lines import wrap_rst
 
+from . import _has_bare_double_space
 from . import InternalBaseTest
 
 CLONE_DIR = Path("/tmp/rst-wrap-lines-cpython")
 REPO_URL = "https://github.com/python/cpython"
-
-# Matches inline RST constructs that may legitimately contain multiple
-# spaces (inline literals, roles, hyperlinks, emphasis, bold). Used to
-# exclude protected content when checking for bare double-spaces.
-_INLINE_MASK_RE = re.compile(
-    r"``[^`]+``"  # ``inline literal``
-    r"|:[a-zA-Z][\w:+.-]*:`[^`]+?`_{0,2}"  # :role:`text`
-    r"|`[^`]+?<[^>]+>`_{1,2}"  # `display <url>`_
-    r"|`[^`]+?`_{0,2}"  # `phrase ref`_
-    r"|\*\*[^*]+\*\*"  # **bold**
-    r"|\*[^*]+\*"  # *emphasis*
-)
-
-
-def _has_bare_double_space(line):
-    """True if *line* contains '  ' outside inline RST constructs."""
-    return "  " in _INLINE_MASK_RE.sub("X", line)
 
 
 class TestCPythonDocs(InternalBaseTest):
@@ -103,6 +86,31 @@ class TestCPythonDocs(InternalBaseTest):
                         f" double-space: {line!r:.100}"
                     )
                     break
+
+            # 4. no tool-produced list-item line should have bare
+            # double-spaces.
+            try:
+                self.assert_no_double_space_in_list_items(src, out)
+            except AssertionError as e:
+                failures.append(f"{path.name}: {e}")
+
+            # 5. blank line count must be preserved.
+            try:
+                self.assert_blank_line_count_preserved(src, out)
+            except AssertionError as e:
+                failures.append(f"{path.name}: {e}")
+
+            # 6. every hyperlink target line must survive unchanged.
+            try:
+                self.assert_hyperlink_targets_unchanged(src, out)
+            except AssertionError as e:
+                failures.append(f"{path.name}: {e}")
+
+            # 7. no tool-produced line may have trailing whitespace.
+            try:
+                self.assert_no_trailing_whitespace_introduced(src, out)
+            except AssertionError as e:
+                failures.append(f"{path.name}: {e}")
 
         if failures:
             pytest.fail("\n".join(failures))
