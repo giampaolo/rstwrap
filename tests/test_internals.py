@@ -73,6 +73,22 @@ class TestProseParagraphs(InternalBaseTest):
         assert "::\n" in out
         self.assert_idempotent(src)
 
+    def test_double_space_with_long_hyperlink_not_lengthened(self):
+        # A paragraph with a double-space (which triggers rewrap) that also
+        # contains a hyperlink whose display text was split across lines.
+        # Joining produces an un-splittable token >79 chars; the tool must
+        # not produce an output line longer than the longest input line.
+        src = (
+            "See the `prebuilt versions are\n"
+            "available <https://docs.python.org/dev/download.html>`_."
+            "  Also see other stuff.\n"
+        )
+        out = self.wrap(src)
+        max_src = max(len(x) for x in src.splitlines())
+        max_out = max(len(x) for x in out.splitlines())
+        assert max_out <= max_src
+        self.assert_idempotent(src)
+
 
 class TestPassthrough(InternalBaseTest):
     def test_section_title_unchanged(self):
@@ -308,4 +324,20 @@ class TestListItems(InternalBaseTest):
         out = self.wrap(src)
         # The output must be a single wrapped paragraph, not a list.
         assert out.strip().startswith("Some prose")
+        self.assert_idempotent(src)
+
+    def test_bullet_with_long_hyperlink_continuation_not_lengthened(self):
+        # A bullet whose continuation contains a long hyperlink that was
+        # manually split across lines. Joining produces an un-splittable
+        # token; the tool must not produce a line longer than the longest
+        # original line.
+        src = (
+            "- See the `prebuilt versions are\n"
+            "  available <https://docs.python.org/dev/download.html>`_."
+            "  Also other stuff.\n"
+        )
+        out = self.wrap(src)
+        max_src = max(len(x) for x in src.splitlines())
+        max_out = max(len(x) for x in out.splitlines())
+        assert max_out <= max_src
         self.assert_idempotent(src)

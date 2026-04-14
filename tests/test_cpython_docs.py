@@ -51,8 +51,19 @@ class TestCPythonDocs(InternalBaseTest):
         for path in rst_files:
             src = path.read_text(encoding="utf-8")
             out = wrap_rst(src)
-            # idempotency
+            # 1. idempotency
             if wrap_rst(out) != out:
                 failures.append(f"{path.name}: not idempotent")
+                continue
+            # 2. the tool must never increase the maximum line length of
+            # a file (e.g. by joining a hyperlink that was manually split
+            # across lines into a single un-splittable token).
+            max_src = max((len(x) for x in src.splitlines()), default=0)
+            max_out = max((len(x) for x in out.splitlines()), default=0)
+            if max_out > max_src:
+                failures.append(
+                    f"{path.name}: max line length increased"
+                    f" ({max_src} -> {max_out})"
+                )
         if failures:
             pytest.fail("\n".join(failures))

@@ -409,7 +409,15 @@ def _handle_list_run(lines, i, n, width):
             subsequent = " " * text_col
             joined = " ".join(buf)
             wrapped = _wrap_paragraph(joined, width, initial, subsequent)
-            emitted.extend(wrapped.split("\n"))
+            candidate = wrapped.split("\n")
+            max_orig = max(len(ln) for ln in original)
+            # No-lengthen guard: if wrapping would produce a line longer
+            # than the longest original line (e.g. because a long inline
+            # token cannot be split), keep the original verbatim.
+            if any(len(ln) > max_orig for ln in candidate):
+                emitted.extend(original)
+            else:
+                emitted.extend(candidate)
         i = j
     return emitted, i
 
@@ -451,7 +459,14 @@ def _handle_prose(lines, i, n, width):
     if normalized == joined and all(len(ln) <= width for ln in buf):
         return buf, j
     wrapped = _wrap_paragraph(normalized, width, "", "")
-    return wrapped.split("\n"), j
+    candidate = wrapped.split("\n")
+    max_orig = max(len(ln) for ln in buf)
+    # No-lengthen guard: if wrapping would produce a line longer than
+    # the longest original line (e.g. because a long inline token such
+    # as a hyperlink or role cannot be split), keep the original verbatim.
+    if any(len(ln) > max_orig for ln in candidate):
+        return buf, j
+    return candidate, j
 
 
 # ---------------------------------------------------------------------------
