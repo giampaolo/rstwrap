@@ -112,11 +112,39 @@ class TestZSphinxBuild(BaseTest):
     @classmethod
     def setup_class(cls):
         clone_cpython_repo()
-        shutil.rmtree(DOC_DIR_2, ignore_errors=True)
-        shutil.copytree(DOC_DIR, DOC_DIR_2)
+        # shutil.rmtree(DOC_DIR_2, ignore_errors=True)
+        # shutil.copytree(DOC_DIR, DOC_DIR_2)
+
+    @staticmethod
+    def log(msg):
+        print("\n")
+        print("=" * 70)
+        print(msg)
+        print("=" * 70)
 
     def test_it(self):
+        sphinx_cmd = [
+            "sphinx-build",
+            "-b",
+            "html",
+            "-D",
+            "html_last_updated_fmt=",
+            ".",
+            "",
+        ]
+
+        # Sphinx build #1.
+        self.log("Build original CPython doc")
+        sphinx_cmd[-1] = "_build/html-1"
+        subprocess.run(sphinx_cmd, cwd=DOC_DIR_2, check=True)
+
+        # Run CLI tool.
+        self.log("Execute CLI tool")
         cmd = [sys.executable, "-m", "rst_wrap_lines", DOC_DIR_2]
-        subprocess.run(cmd, check=True)
-        cmd = ["sphinx-build", "-b", "html", ".", "_build/html"]
         subprocess.run(cmd, cwd=DOC_DIR_2, check=True)
+
+        # Sphinx build #2; if something went wrong, we'll crash here
+        # already.
+        self.log("Re-build CPython doc")
+        sphinx_cmd[-1] = "_build/html-2"
+        subprocess.run(sphinx_cmd, cwd=DOC_DIR_2, check=True)
