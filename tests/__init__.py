@@ -47,6 +47,14 @@ class InternalBaseTest:
         second = wrap_rst(first, width)
         assert first == second
 
+    def check_all(self, src, out):
+        """Run all universal sanity checks on a (src, out) pair."""
+        self.assert_idempotent(src)
+        self.assert_no_trailing_whitespace_introduced(src, out)
+        self.assert_no_double_space_in_list_items(src, out)
+        self.assert_blank_line_count_preserved(src, out)
+        self.assert_hyperlink_targets_unchanged(src, out)
+
     def assert_no_double_space_in_list_items(self, src, out):
         """Assert no tool-produced list-item line contains bare double spaces."""
         src_line_set = set(src.splitlines())

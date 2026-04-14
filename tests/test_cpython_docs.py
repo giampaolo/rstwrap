@@ -87,28 +87,9 @@ class TestCPythonDocs(InternalBaseTest):
                     )
                     break
 
-            # 4. no tool-produced list-item line should have bare
-            # double-spaces.
+            # 4-7. universal sanity checks.
             try:
-                self.assert_no_double_space_in_list_items(src, out)
-            except AssertionError as e:
-                failures.append(f"{path.name}: {e}")
-
-            # 5. blank line count must be preserved.
-            try:
-                self.assert_blank_line_count_preserved(src, out)
-            except AssertionError as e:
-                failures.append(f"{path.name}: {e}")
-
-            # 6. every hyperlink target line must survive unchanged.
-            try:
-                self.assert_hyperlink_targets_unchanged(src, out)
-            except AssertionError as e:
-                failures.append(f"{path.name}: {e}")
-
-            # 7. no tool-produced line may have trailing whitespace.
-            try:
-                self.assert_no_trailing_whitespace_introduced(src, out)
+                self.check_all(src, out)
             except AssertionError as e:
                 failures.append(f"{path.name}: {e}")
 
