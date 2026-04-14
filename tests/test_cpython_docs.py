@@ -7,6 +7,7 @@ test class is collected.
 
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,8 @@ from . import has_bare_double_space
 
 CLONE_DIR = Path("/tmp/rst-wrap-lines-cpython")
 DOC_DIR = CLONE_DIR / "Doc"
+DOC_DIR_2 = CLONE_DIR / "Doc-2"
+
 REPO_URL = "https://github.com/python/cpython"
 
 
@@ -103,16 +106,16 @@ class TestCPythonDocs(BaseTest):
             pytest.fail("\n".join(failures))
 
 
-# class TestAgainstSphinx(BaseTest):
-#     DOC_DIR_2 = DOC_DIR.with_name(DOC_DIR.name + "-2")
+class TestZSphinxBuild(BaseTest):
 
-#     @classmethod
-#     def setup_class(cls):
-#         shutil.rmtree(cls.DOC_DIR_2, ignore_errors=True)
-#         clone_cpython_repo()
-#         shutil.copytree(DOC_DIR, cls.DOC_DIR_2)
+    @classmethod
+    def setup_class(cls):
+        clone_cpython_repo()
+        shutil.rmtree(DOC_DIR_2, ignore_errors=True)
+        shutil.copytree(DOC_DIR, DOC_DIR_2)
 
-#     def test_it(self):
-#         rst_files = sorted((self.DOC_DIR_2).rglob("*.rst"))
-#         cmd = ["sphinx-build", "-b", "html", ".", "_build/html"]
-#         subprocess.run(cmd, cwd=self.DOC_DIR_2, check=True)
+    def test_it(self):
+        cmd = [sys.executable, "-m", "rst_wrap_lines", DOC_DIR_2]
+        subprocess.run(cmd, check=True)
+        cmd = ["sphinx-build", "-b", "html", ".", "_build/html"]
+        subprocess.run(cmd, cwd=DOC_DIR_2, check=True)
