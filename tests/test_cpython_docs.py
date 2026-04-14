@@ -16,8 +16,8 @@ Adding a regression test: drop a .rst file into tests/rst/ and it
 will be picked up automatically on the next run.
 """
 
-import pathlib
 import difflib
+import pathlib
 
 import docutils.nodes
 import pytest

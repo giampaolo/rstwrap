@@ -413,7 +413,8 @@ def _handle_list_run(lines, i, n, width):
             # parses separately.
             if nxt_indent != text_col:
                 break
-            if _match_list_item(nxt):
+            nxt_li = _match_list_item(nxt)
+            if nxt_li and nxt_li[0] == list_indent:
                 break
             buf.append(nxt.strip())
             j += 1
