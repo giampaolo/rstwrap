@@ -69,7 +69,7 @@ WIDTH = 79
 CHECK = False
 DIFF = False
 VERBOSE = False
-PATHS = []
+PATHS = set()
 
 IGNORED_DIRS = frozenset([
     ".git",
@@ -670,19 +670,23 @@ def parse_cli():
     WIDTH = args.width
     CHECK = args.check
     DIFF = args.diff
-    PATHS = args.paths
     VERBOSE = args.verbose
+
+    for path in args.paths:
+        PATHS.update(_collect_rst_files(path))
+    PATHS = sorted(PATHS)
 
 
 def main():
     parse_cli()
+
     any_changed = False
     for path in PATHS:
-        for rst_file in _collect_rst_files(path):
-            if VERBOSE:
-                print(f"checking {rst_file}")
-            if _process_file(rst_file):
-                any_changed = True
+        if VERBOSE:
+            print(f"checking {path}")
+        if _process_file(path):
+            any_changed = True
+
     if CHECK and any_changed:
         sys.exit(1)
 
