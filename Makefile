@@ -23,8 +23,8 @@ clean:  ## Remove all build/temp files.
 test:  ## Run tests.
 	$(PYTHON) -m pytest $(ARGS)
 
-test-slow:  ## Run all tests, including slow ones.
-	$(MAKE) test ARGS="-m ''"
+test-slow:  ## Run slow tests.
+	$(MAKE) test ARGS="-m slow"
 
 _ls = $(if $(FILES), printf '%s\n' $(FILES), git ls-files $(1))
 

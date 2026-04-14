@@ -8,7 +8,7 @@ version = "0.1.0"
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-instafail", "pytest-xdist", "sphinx"]
+test = ["pytest", "pytest-instafail", "pytest-xdist", "sphinx>=9.1"]
 lint = ["black", "ruff", "toml-sort"]
 
 [project.scripts]
@@ -26,13 +26,13 @@ addopts = [
     "--strict-markers",
     "--tb=short",
     "--verbose",
+    "-m",
     "-p instafail",
     "-p no:doctest",
     "-p no:junitxml",
     "-p no:nose",
     "-p no:pastebin",
     "-p xdist",
-    "-m",
     "not slow",
 ]
 verbosity_subtests = "0"
