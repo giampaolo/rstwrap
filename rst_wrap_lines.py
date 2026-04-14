@@ -71,6 +71,20 @@ DIFF = False
 VERBOSE = False
 PATHS = []
 
+IGNORED_DIRS = frozenset([
+    ".git",
+    ".hg",
+    ".svn",
+    ".tox",
+    ".venv",
+    "venv",
+    ".mypy_cache",
+    "__pycache__",
+    "node_modules",
+    "_build",
+    "build",
+    "dist",
+])
 
 # ---------------------------------------------------------------------------
 # Inline-token recognition
@@ -574,28 +588,12 @@ def wrap_rst(source, width=WIDTH):
 # ---------------------------------------------------------------------------
 
 
-_IGNORED_DIRS = frozenset([
-    ".git",
-    ".hg",
-    ".svn",
-    ".tox",
-    ".venv",
-    "venv",
-    ".mypy_cache",
-    "__pycache__",
-    "node_modules",
-    "_build",
-    "build",
-    "dist",
-])
-
-
 def _collect_rst_files(path):
     """Return a list of .rst files for *path*.
 
     If *path* is a file, return it as-is (a single-element list).
     If *path* is a directory, recursively collect all .rst files,
-    skipping subdirectories whose name is in _IGNORED_DIRS.
+    skipping subdirectories whose name is in IGNORED_DIRS.
     """
     if path.is_file():
         return [path]
@@ -605,7 +603,7 @@ def _collect_rst_files(path):
         current = dirs.pop()
         for entry in sorted(current.iterdir()):
             if entry.is_dir():
-                if entry.name not in _IGNORED_DIRS:
+                if entry.name not in IGNORED_DIRS:
                     dirs.append(entry)
             elif entry.suffix == ".rst":
                 rst_files.append(entry)
