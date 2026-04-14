@@ -6,8 +6,14 @@ CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-cpython")
 
 
 def clone_cpython_repo():
+    """The CPython repo is cloned once (sparse, Doc/ only) into a temp
+    directory and reused across runs. This clone is triggered here,
+    before pytest-xdist spawns processes, so that the parametrize list
+    for tests is available at collection time and can be parallelized.
+    """
     if CLONE_DIR.exists():
         return
+
     subprocess.run(
         [
             "git",

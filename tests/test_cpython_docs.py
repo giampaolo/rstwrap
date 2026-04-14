@@ -1,9 +1,13 @@
-"""Tests running wrap_rst() against the CPython documentation.
+"""Tests run against every .rst file of the CPython documentation (+600
+files).
+
+Each .rst file is a separate parametrized test item, so that
+pytest-xdist can distribute them across workers.
 
 The CPython repo is cloned once (sparse, Doc/ only) into a temp
-directory and reused across runs. The clone is triggered at module
-import time, so that the parametrize list for tests is available at
-collection time and can be parallelized (pytest-xdist).
+directory, and reused across runs. This is performed in conftest.py,
+during pytest collection setup, **before** pytest-xdist spawn worker
+processes.
 """
 
 import difflib
@@ -26,9 +30,9 @@ assert RST_FILES
 
 
 class TestCPythonDocs(BaseTest):
-    """Run wrap_rst() against every .rst file in the CPython docs and
-    verify basic invariants: idempotency, no tool-produced line exceeds
-    the target width, no bare double-space in tool-produced prose.
+    """Run wrap_rst() against every .rst file and verify basic
+    invariants: idempotency, no tool-produced line exceeds the target
+    width, no bare double-space in tool-produced prose.
     """
 
     @pytest.mark.parametrize("path", RST_FILES, ids=lambda p: p.name)
@@ -103,12 +107,10 @@ def _doctree_str(text):
 class TestDocutils(BaseTest):
     """Verify that wrap_rst() does not alter the docutils document tree.
 
-    Each .rst file in the CPython docs is a separate parametrized test
-    item so that pytest-xdist can distribute them across workers.  Parse
-    both the original and the wrapped version with docutils and compare
-    the resulting trees (after normalising intra-node whitespace).  A
-    difference means the tool changed something structural, not just
-    prose line lengths.
+    Parse both the original and the wrapped version with docutils and
+    compare the resulting trees (after normalising intra-node
+    whitespace).  A difference means the tool changed something
+    structural, not just prose line lengths.
     """
 
     @pytest.mark.parametrize("path", RST_FILES, ids=lambda p: p.name)
