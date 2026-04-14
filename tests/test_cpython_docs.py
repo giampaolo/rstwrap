@@ -7,8 +7,6 @@ collection time and can be parallelized (pytest-xdist).
 """
 
 import difflib
-import subprocess
-from pathlib import Path
 
 import docutils.nodes
 import pytest
@@ -20,43 +18,11 @@ from rst_wrap_lines import wrap_rst
 
 from . import BaseTest
 from . import has_bare_double_space
+from .conftest import CLONE_DIR
 
-CLONE_DIR = Path("/tmp/rst-wrap-lines-cpython")
 DOC_DIR = CLONE_DIR / "Doc"
-
-REPO_URL = "https://github.com/python/cpython"
-
-
-def clone_cpython_repo():
-    if CLONE_DIR.exists():
-        return
-    subprocess.run(
-        [
-            "git",
-            "clone",
-            "--filter=blob:none",
-            "--sparse",
-            "--branch",
-            "main",
-            "--single-branch",
-            "--depth",
-            "1",
-            REPO_URL,
-            str(CLONE_DIR),
-        ],
-        check=True,
-    )
-    subprocess.run(
-        ["git", "sparse-checkout", "set", "Doc/"],
-        cwd=CLONE_DIR,
-        check=True,
-    )
-
-
-# Clone at import time (if needed) so DOC_DIR exists when pytest builds
-# the parametrize list below.
-clone_cpython_repo()
-_RST_FILES = sorted(DOC_DIR.rglob("*.rst"))
+RST_FILES = sorted(DOC_DIR.rglob("*.rst"))
+assert RST_FILES
 
 
 class TestCPythonDocs(BaseTest):
@@ -65,7 +31,7 @@ class TestCPythonDocs(BaseTest):
     the target width, no bare double-space in tool-produced prose.
     """
 
-    @pytest.mark.parametrize("path", _RST_FILES, ids=lambda p: p.name)
+    @pytest.mark.parametrize("path", RST_FILES, ids=lambda p: p.name)
     def test_all(self, path):
         src = path.read_text(encoding="utf-8")
         out = wrap_rst(src)
@@ -145,7 +111,7 @@ class TestDocutils(BaseTest):
     prose line lengths.
     """
 
-    @pytest.mark.parametrize("path", _RST_FILES, ids=lambda p: p.name)
+    @pytest.mark.parametrize("path", RST_FILES, ids=lambda p: p.name)
     def test_doctree_unchanged(self, path):
         src = path.read_text(encoding="utf-8")
         out = wrap_rst(src)

@@ -1,11 +1,8 @@
 """Test utils."""
 
-import pathlib
 import re
 
 from rst_wrap_lines import wrap_rst
-
-TESTS_DIR = pathlib.Path(__file__).parent
 
 # Matches inline RST constructs that may legitimately contain multiple
 # spaces (inline literals, roles, hyperlinks, emphasis, bold). Used to

@@ -300,7 +300,9 @@ _FIELD_LIST_RE = re.compile(r"^:[^`:\n]+:(?:\s|$)")
 # RST option list item: short option (-x, -x ARG) or long option
 # (--foo, --foo=ARG, --foo ARG).  Two or more spaces separate the
 # option(s) from the description on the same line.
-_OPTION_LIST_RE = re.compile(r"^(-[a-zA-Z0-9]|--[a-zA-Z0-9][-a-zA-Z0-9]*)(\s|$)")
+_OPTION_LIST_RE = re.compile(
+    r"^(-[a-zA-Z0-9]|--[a-zA-Z0-9][-a-zA-Z0-9]*)(\s|$)"
+)
 
 
 def _match_list_item(line):

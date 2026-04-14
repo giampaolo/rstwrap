@@ -247,7 +247,10 @@ class TestPassthrough(BaseTest):
         self.check_all(src, out)
 
     def test_option_list_long_option_unchanged(self):
-        src = "--output FILE  The output file.\n--verbose      Enable verbose mode.\n"
+        src = (
+            "--output FILE  The output file.\n--verbose      Enable verbose"
+            " mode.\n"
+        )
         out = self.wrap(src)
         assert out == src
         self.check_all(src, out)
