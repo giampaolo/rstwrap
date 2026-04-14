@@ -1,17 +1,22 @@
-"""Tests run against .rst files from multiple external projects.
+"""Tests run against .rst files from multiple sources.
 
 Currently includes:
+- Local regression fixtures (tests/rst/, always present)
 - CPython documentation (Doc/, ~600 files)
 - Sphinx documentation (doc/, ~100 files)
 
 Each .rst file is a separate parametrized test item, so that
 pytest-xdist can distribute them across workers.
 
-The repos are cloned once (sparse) into temp directories and reused
-across runs. Cloning is triggered in conftest.py during collection
-setup, **before** pytest-xdist spawns worker processes.
+The external repos are cloned once (sparse) into temp directories and
+reused across runs. Cloning is triggered in conftest.py during
+collection setup, **before** pytest-xdist spawns worker processes.
+
+Adding a regression test: drop a .rst file into tests/rst/ and it
+will be picked up automatically on the next run.
 """
 
+import pathlib
 import difflib
 
 import docutils.nodes
@@ -27,7 +32,10 @@ from . import has_bare_double_space
 from .conftest import CLONE_DIR
 from .conftest import SPHINX_CLONE_DIR
 
+_LOCAL_RST_DIR = pathlib.Path(__file__).parent / "rst"
+
 _SOURCES = [
+    (_LOCAL_RST_DIR, "local"),
     (CLONE_DIR / "Doc", "cpython"),
     (SPHINX_CLONE_DIR / "doc", "sphinx"),
 ]
