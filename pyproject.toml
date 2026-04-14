@@ -23,21 +23,19 @@ addopts = [
     "--instafail",
     "--no-header",
     "--strict-config",
-    "--strict-markers",
     "--tb=short",
     "--verbose",
-    "-m",
     "-p instafail",
     "-p no:doctest",
     "-p no:junitxml",
     "-p no:nose",
     "-p no:pastebin",
     "-p xdist",
-    "not slow",
 ]
 verbosity_subtests = "0"
 testpaths = ["tests/"]
 python_files = ["test_*.py"]
+strict_markers = true
 markers = [
     "slow: marks tests as slow (deselected by default; run with -m '')",
 ]
