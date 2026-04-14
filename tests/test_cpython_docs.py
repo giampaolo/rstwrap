@@ -65,55 +65,41 @@ class TestCPythonDocs(BaseTest):
     the target width, no bare double-space in tool-produced prose.
     """
 
-    def test_all(self):
-        failures = []
-        rst_files = _RST_FILES
-        assert rst_files, f"no .rst files found under {DOC_DIR}"
-        for path in rst_files:
-            src = path.read_text(encoding="utf-8")
-            out = wrap_rst(src)
-            src_line_set = set(src.splitlines())
+    @pytest.mark.parametrize("path", _RST_FILES, ids=lambda p: p.name)
+    def test_all(self, path):
+        src = path.read_text(encoding="utf-8")
+        out = wrap_rst(src)
+        src_line_set = set(src.splitlines())
 
-            # 1. idempotency
-            if wrap_rst(out) != out:
-                failures.append(f"{path.name}: not idempotent")
-                continue
+        # 1. idempotency
+        assert wrap_rst(out) == out, "not idempotent"
 
-            # 2. no tool-produced line may exceed the target width.
-            # Verbatim passthrough of already-long source lines is OK.
-            for line in out.splitlines():
-                if line in src_line_set:
-                    continue  # verbatim passthrough -- OK
-                if len(line) > WIDTH:
-                    failures.append(
-                        f"{path.name}: tool-produced line exceeds width"
-                        f" ({len(line)} > {WIDTH}): {line!r:.80}"
-                    )
-                    break
+        # 2. no tool-produced line may exceed the target width.
+        #    Verbatim passthrough of already-long source lines is OK.
+        for line in out.splitlines():
+            if line in src_line_set:
+                continue  # verbatim passthrough -- OK
+            if len(line) > WIDTH:
+                pytest.fail(
+                    "tool-produced line exceeds width"
+                    f" ({len(line)} > {WIDTH}): {line!r:.80}"
+                )
 
-            # 3. no prose line produced by the tool should contain a bare
-            # double-space (spaces inside inline RST constructs are
-            # intentional and excluded from this check).
-            for line in out.splitlines():
-                if line in src_line_set:
-                    continue  # verbatim passthrough -- OK
-                if line.startswith((" ", "\t", "..")):
-                    continue  # indented or directive line -- skip
-                if has_bare_double_space(line):
-                    failures.append(
-                        f"{path.name}: tool-produced line has bare"
-                        f" double-space: {line!r:.100}"
-                    )
-                    break
+        # 3. no prose line produced by the tool should contain a bare
+        #    double-space (spaces inside inline RST constructs are
+        #    intentional and excluded from this check).
+        for line in out.splitlines():
+            if line in src_line_set:
+                continue  # verbatim passthrough -- OK
+            if line.startswith((" ", "\t", "..")):
+                continue  # indented or directive line -- skip
+            if has_bare_double_space(line):
+                pytest.fail(
+                    f"tool-produced line has bare double-space: {line!r:.100}"
+                )
 
-            # 4-7. universal sanity checks.
-            try:
-                self.check_all(src, out)
-            except AssertionError as e:
-                failures.append(f"{path.name}: {e}")
-
-        if failures:
-            pytest.fail("\n".join(failures))
+        # 4. universal sanity checks.
+        self.check_all(src, out)
 
 
 def _doctree_str(text):
@@ -149,7 +135,7 @@ def _doctree_str(text):
 
 
 @pytest.mark.slow
-class TestZDocutils(BaseTest):
+class TestDocutils(BaseTest):
     """Verify that wrap_rst() does not alter the docutils document tree.
 
     Each .rst file in the CPython docs is a separate parametrized test
