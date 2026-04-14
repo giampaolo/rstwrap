@@ -52,6 +52,13 @@ Inline RST constructs that contain internal whitespace (`` ``like this`` ``,
 as atomic tokens and never broken across lines. Spaces inside inline constructs
 are left intact.
 
+## Tested against CPython docs
+
+This tool is successfully tested against all 548 `.rst` files in the
+[CPython documentation](https://github.com/python/cpython/tree/main/Doc).
+The test suite verifies idempotency, no tool-produced line exceeds the
+target width, and no bare double spaces appear in tool-produced prose.
+
 ## Development
 
 ```
