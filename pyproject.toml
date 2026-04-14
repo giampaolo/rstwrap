@@ -8,7 +8,7 @@ version = "0.1.0"
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-instafail", "pytest-xdist", "sphinx>=9.1"]
+test = ["pytest", "pytest-instafail", "pytest-xdist", "python-docs-theme", "sphinx>=9.1"]
 lint = ["black", "ruff", "toml-sort"]
 
 [project.scripts]
@@ -145,3 +145,11 @@ ignore = [
 
 [tool.ruff.lint.isort]
 force-single-line = true  # one import per line
+
+[tool.tomlsort]
+in_place = true
+no_sort_tables = true
+sort_inline_arrays = true
+spaces_before_inline_comment = 2
+spaces_indent_inline_array = 4
+trailing_comma_inline_array = true

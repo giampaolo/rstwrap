@@ -34,9 +34,13 @@ ruff:  ## Run ruff linter.
 black:  ## Run black formatter (check only).
 	@$(call _ls,'*.py') | xargs $(PYTHON) -m black --check --safe
 
+lint-toml:  ## Run linter for pyproject.toml.
+	@$(call _ls,'*.toml') | xargs toml-sort --check
+
 lint-all:  ## Run all linters.
 	$(MAKE) black
 	$(MAKE) ruff
+	$(MAKE) lint-toml
 
 fix-ruff:  ## Auto-fix ruff warnings.
 	@$(call _ls,'*.py') | xargs $(PYTHON) -m ruff check --fix --output-format=concise $(ARGS)
@@ -44,9 +48,13 @@ fix-ruff:  ## Auto-fix ruff warnings.
 fix-black:  ## Auto-format with black.
 	@$(call _ls,'*.py') | xargs $(PYTHON) -m black
 
+fix-toml:  ## Fix pyproject.toml
+	@git ls-files '*.toml' | xargs toml-sort
+
 fix-all:  ## Run all fixers.
 	$(MAKE) fix-ruff
 	$(MAKE) fix-black
+	$(MAKE) fix-toml
 
 help:  ## Display callable targets.
 	@awk -F':.*?## ' '/^[a-zA-Z0-9_.-]+:.*?## / {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST) | sort
