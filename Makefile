@@ -20,6 +20,9 @@ clean:  ## Remove all build/temp files.
 		dist/ \
 		htmlcov/
 
+install:  ## Install in editable + user mode
+	$(PYTHON) -m pip install -e . --user
+
 test:  ## Run tests.
 	$(PYTHON) -m pytest $(ARGS)
 

@@ -55,6 +55,7 @@ Usage::
     rst-wrap-lines docs/*.rst
     rst-wrap-lines --check docs/*.rst
     rst-wrap-lines --width 80 foo.rst
+    rst-wrap-lines --join docs/*.rst    # also merge short lines onto one
 """
 
 import argparse
@@ -70,6 +71,7 @@ from pathlib import Path
 WIDTH = 79
 CHECK = False
 DIFF = False
+JOIN = False
 PATHS = set()
 
 IGNORED_DIRS = frozenset([
@@ -291,6 +293,21 @@ def _is_underline(line):
     return c in _UNDERLINE_CHARS and all(ch == c for ch in s)
 
 
+def _is_short_underline(line):
+    """True if the line is a 2-char section underline (e.g. ``--`` under
+    a 2-letter module name like ``io``).
+
+    Excludes ``::`` and ``..`` which have dedicated meanings elsewhere.
+    Used by ``_handle_prose`` to avoid joining a short title into its
+    underline in ``join`` mode.
+    """
+    s = line.rstrip()
+    if len(s) != 2 or s in {"::", ".."}:
+        return False
+    c = s[0]
+    return c in _UNDERLINE_CHARS and s[1] == c
+
+
 # Field list item: ':field name: value'. Field names may contain spaces
 # (e.g. ':type exc_info:') but never backticks, which distinguishes
 # them from ':role:`text`' inline markup (a role is always followed by
@@ -326,7 +343,7 @@ def _leading_ws(line):
 # ---------------------------------------------------------------------------
 
 
-def _handle_directive(lines, i, n, width):
+def _handle_directive(lines, i, n, width, join):
     """Emit directive marker + body.
 
     Prose-body directives (class, method, note, ...) have their body
@@ -355,7 +372,7 @@ def _handle_directive(lines, i, n, width):
                 ln[len(indent) :] if ln.strip() else "" for ln in body
             )
             sub_width = max(1, width - len(indent))
-            wrapped = wrap_rst(dedented, sub_width)
+            wrapped = wrap_rst(dedented, sub_width, join=join)
             emitted.extend(
                 indent + ln if ln else "" for ln in wrapped.split("\n")
             )
@@ -381,7 +398,7 @@ def _handle_simple_table(lines, i, n):
     return emitted, i
 
 
-def _handle_list_run(lines, i, n, width):
+def _handle_list_run(lines, i, n, width, join):
     """Wrap a run of sibling list items at the same indent level.
 
     A "run" is a sequence of consecutive bullets with no blank line
@@ -441,11 +458,10 @@ def _handle_list_run(lines, i, n, width):
             and next_indent == len(list_indent)
             and not (nxt_li and nxt_li[0] == list_indent)
         )
-        if (
-            all(len(ln) <= width for ln in original)
-            or visually_attached
-            or prose_ambiguity
-        ):
+        fits_verbatim = all(len(ln) <= width for ln in original) and not (
+            join and len(original) > 1
+        )
+        if fits_verbatim or visually_attached or prose_ambiguity:
             emitted.extend(original)
         else:
             initial = indent + bullet + " "
@@ -464,7 +480,7 @@ def _handle_list_run(lines, i, n, width):
     return emitted, i
 
 
-def _handle_prose(lines, i, n, width):
+def _handle_prose(lines, i, n, width, join):
     """Accumulate and wrap a plain prose paragraph.
 
     Stops at blank lines, indented lines, explicit markup, table rows,
@@ -484,6 +500,8 @@ def _handle_prose(lines, i, n, width):
             break
         if _is_underline(nxt):
             break
+        if _is_short_underline(nxt):
+            break
         if _FIELD_LIST_RE.match(nxt):
             break
         if _OPTION_LIST_RE.match(nxt):
@@ -499,8 +517,15 @@ def _handle_prose(lines, i, n, width):
     joined = " ".join(s.strip() for s in buf)
     normalized = _collapse_spaces(joined)
     # Fidelity guard: keep verbatim only if the paragraph already fits
-    # *and* has no redundant spaces to normalize.
-    if normalized == joined and all(len(ln) <= width for ln in buf):
+    # *and* has no redundant spaces to normalize. In join mode a
+    # multi-line paragraph is always re-wrapped so short consecutive
+    # lines merge onto one.
+    fits_verbatim = (
+        normalized == joined
+        and all(len(ln) <= width for ln in buf)
+        and not (join and len(buf) > 1)
+    )
+    if fits_verbatim:
         return buf, j
     wrapped = _wrap_paragraph(normalized, width, "", "")
     candidate = wrapped.split("\n")
@@ -517,8 +542,13 @@ def _handle_prose(lines, i, n, width):
 # ---------------------------------------------------------------------------
 
 
-def wrap_rst(source, width=WIDTH):
-    """Wrap prose paragraphs to *width* and remove double spaces."""
+def wrap_rst(source, width=WIDTH, join=False):
+    """Wrap prose paragraphs to *width* and remove double spaces.
+
+    With *join* True, short consecutive lines inside a prose paragraph
+    or list item are merged onto one line (up to the target width).
+    Default False preserves the existing line breaks.
+    """
     lines = source.splitlines()
     out = []
     i = 0
@@ -545,8 +575,16 @@ def wrap_rst(source, width=WIDTH):
         # Explicit markup: directive, comment, target, footnote/citation
         # def, substitution def.
         if stripped.startswith(".."):
-            emitted, i = _handle_directive(lines, i, n, width)
+            emitted, i = _handle_directive(lines, i, n, width, join)
             out.extend(emitted)
+            continue
+
+        # Anonymous hyperlink target: ``__ URL``. Must be preserved
+        # verbatim -- joining it into surrounding prose would turn the
+        # target definition into garbled text.
+        if stripped.startswith("__ "):
+            out.append(raw)
+            i += 1
             continue
 
         # Section title followed by an underline of equal/greater length.
@@ -599,7 +637,7 @@ def wrap_rst(source, width=WIDTH):
             or out[-1][:1] in {" ", "\t"}
         )
         if at_block_start and _match_list_item(raw):
-            emitted, i = _handle_list_run(lines, i, n, width)
+            emitted, i = _handle_list_run(lines, i, n, width, join)
             out.extend(emitted)
             continue
 
@@ -618,7 +656,7 @@ def wrap_rst(source, width=WIDTH):
             continue
 
         # Plain prose paragraph.
-        emitted, i = _handle_prose(lines, i, n, width)
+        emitted, i = _handle_prose(lines, i, n, width, join)
         out.extend(emitted)
 
     result = "\n".join(out)
@@ -657,7 +695,7 @@ def _collect_rst_files(path):
 
 def _process_file(path):
     src = path.read_text(encoding="utf-8")
-    dst = wrap_rst(src, WIDTH)
+    dst = wrap_rst(src, WIDTH, join=JOIN)
     changed = dst != src
     if DIFF:
         if changed:
@@ -680,7 +718,7 @@ def _process_file(path):
 
 
 def parse_cli(args=None):
-    global WIDTH, CHECK, DIFF, PATHS
+    global WIDTH, CHECK, DIFF, JOIN, PATHS
 
     parser = argparse.ArgumentParser(
         description="Wrap RST prose paragraphs to a max line length."
@@ -703,6 +741,14 @@ def parse_cli(args=None):
         help="print a unified diff instead of writing files",
     )
     parser.add_argument(
+        "--join",
+        action="store_true",
+        help=(
+            "merge short consecutive lines inside a paragraph onto one"
+            " line, up to the target width"
+        ),
+    )
+    parser.add_argument(
         "paths",
         nargs="+",
         type=Path,
@@ -712,6 +758,7 @@ def parse_cli(args=None):
     WIDTH = args.width
     CHECK = args.check
     DIFF = args.diff
+    JOIN = args.join
 
     collected = set()
     for path in args.paths:

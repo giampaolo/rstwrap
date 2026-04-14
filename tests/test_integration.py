@@ -64,16 +64,21 @@ class TestCorpus(BaseTest):
     """Run wrap_rst() against every collected .rst file and verify
     basic invariants: idempotency, no tool-produced line exceeds the
     target width, no bare double-space in tool-produced prose.
+
+    The integration corpus runs with ``join=True`` so the short-line
+    merge path is exercised against every upstream project's docs.
     """
+
+    JOIN = True
 
     @pytest.mark.parametrize("path", _RST_FILE_PARAMS)
     def test_all(self, path):
         src = path.read_text(encoding="utf-8")
-        out = wrap_rst(src)
+        out = wrap_rst(src, join=self.JOIN)
         src_line_set = set(src.splitlines())
 
         # 1. idempotency
-        assert wrap_rst(out) == out, "not idempotent"
+        assert wrap_rst(out, join=self.JOIN) == out, "not idempotent"
 
         # 2. no tool-produced line may exceed the target width.
         #    Verbatim passthrough of already-long source lines is OK.
@@ -142,12 +147,17 @@ class TestDocutils(BaseTest):
     compare the resulting trees (after normalising intra-node
     whitespace).  A difference means the tool changed something
     structural, not just prose line lengths.
+
+    Runs with ``join=True`` so the short-line merge path is held to
+    the same doctree-invariant as the default wrap path.
     """
+
+    JOIN = True
 
     @pytest.mark.parametrize("path", _RST_FILE_PARAMS)
     def test_doctree_unchanged(self, path):
         src = path.read_text(encoding="utf-8")
-        out = wrap_rst(src)
+        out = wrap_rst(src, join=self.JOIN)
         if src == out:
             return
         s1 = _doctree_str(src)

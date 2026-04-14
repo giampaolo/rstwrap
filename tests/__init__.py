@@ -36,18 +36,19 @@ def has_bare_double_space(line):
 
 class BaseTest:
     WIDTH = 79
+    JOIN = False
 
     def wrap(self, source, width=None):
         if width is None:
             width = self.WIDTH
-        return wrap_rst(source, width)
+        return wrap_rst(source, width, join=self.JOIN)
 
     def assert_idempotent(self, source, width=None):
         """Assert that wrapping twice yields the same output as once."""
         if width is None:
             width = self.WIDTH
-        first = wrap_rst(source, width)
-        second = wrap_rst(first, width)
+        first = wrap_rst(source, width, join=self.JOIN)
+        second = wrap_rst(first, width, join=self.JOIN)
         assert first == second
 
     def check_all(self, src, out):

@@ -21,6 +21,7 @@ rst-wrap-lines docs/*.rst
 rst-wrap-lines docs/                # whole dir, recursive
 rst-wrap-lines --check docs/*.rst
 rst-wrap-lines --width 80 foo.rst
+rst-wrap-lines --join docs/*.rst    # also merge short consecutive lines
 ```
 
 Options:
@@ -28,6 +29,14 @@ Options:
 - `-w`, `--width` — maximum line length (default: 79)
 - `--check` — exit with code 1 if any file would be changed; do not write
 - `--diff` — print a unified diff instead of writing files
+- `--join` — also merge short consecutive lines inside a paragraph onto
+  one line (up to the target width). For example:
+
+  ```
+  foo         →   foo bar zoo
+  bar
+  zoo
+  ```
 
 ## What gets wrapped
 
@@ -37,6 +46,10 @@ Options:
   `.. versionadded::`, `.. class::`, etc.)
 - Double spaces in prose are removed (e.g. `hello  world` → `hello world`),
   even when the paragraph already fits within the target width
+
+With `--join`, short consecutive lines inside a paragraph are merged onto one
+line (up to the target width). Without the flag, existing line breaks within
+prose are preserved and only over-width lines get wrapped.
 
 ## What is left untouched
 
