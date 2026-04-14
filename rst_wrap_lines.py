@@ -596,8 +596,7 @@ def _collect_rst_files(path):
     skipping subdirectories whose name is in IGNORED_DIRS.
     """
     if path.is_file():
-        return [path]
-    rst_files = []
+        yield [path]
     dirs = [path]
     while dirs:
         current = dirs.pop()
@@ -606,8 +605,7 @@ def _collect_rst_files(path):
                 if entry.name not in IGNORED_DIRS:
                     dirs.append(entry)
             elif entry.suffix == ".rst":
-                rst_files.append(entry)
-    return rst_files
+                yield entry
 
 
 def _process_file(path):
