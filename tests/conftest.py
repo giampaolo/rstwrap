@@ -4,6 +4,7 @@ import subprocess
 CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-cpython")
 SPHINX_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-sphinx")
 SQLALCHEMY_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-sqlalchemy")
+PYTEST_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-pytest")
 
 _REPOS = [
     {
@@ -23,6 +24,12 @@ _REPOS = [
         "clone_dir": SQLALCHEMY_CLONE_DIR,
         "branch": "main",
         "sparse_dir": "doc/build/",
+    },
+    {
+        "url": "https://github.com/pytest-dev/pytest",
+        "clone_dir": PYTEST_CLONE_DIR,
+        "branch": "main",
+        "sparse_dir": "doc/en/",
     },
 ]
 
