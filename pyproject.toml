@@ -37,15 +37,14 @@ testpaths = ["tests/"]
 python_files = ["test_*.py"]
 
 [tool.black]
-target-version = ["py37"]
+target-version = ["py39"]
 line-length = 79
-skip-string-normalization = true
 preview = true
 enable-unstable-feature = ["hug_parens_with_braces_and_square_brackets", "string_processing", "wrap_long_dict_values_in_parens"]
 
 [tool.ruff]
 # https://beta.ruff.rs/docs/settings/
-target-version = "py37"
+target-version = "py39"
 line-length = 79
 
 [tool.ruff.lint]

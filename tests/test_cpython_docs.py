@@ -17,6 +17,7 @@ from . import BaseTest
 from . import has_bare_double_space
 
 CLONE_DIR = Path("/tmp/rst-wrap-lines-cpython")
+DOC_DIR = CLONE_DIR / "Doc"
 REPO_URL = "https://github.com/python/cpython"
 
 
@@ -52,8 +53,8 @@ class TestCPythonDocs(BaseTest):
 
     def test_all(self):
         failures = []
-        rst_files = sorted((CLONE_DIR / "Doc").rglob("*.rst"))
-        assert rst_files, f"no .rst files found under {CLONE_DIR / 'Doc'}"
+        rst_files = sorted((DOC_DIR).rglob("*.rst"))
+        assert rst_files, f"no .rst files found under {DOC_DIR}"
         for path in rst_files:
             src = path.read_text(encoding="utf-8")
             out = wrap_rst(src)

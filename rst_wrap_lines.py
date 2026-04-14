@@ -596,7 +596,8 @@ def _collect_rst_files(path):
     skipping subdirectories whose name is in IGNORED_DIRS.
     """
     if path.is_file():
-        yield [path]
+        yield path
+        return
     dirs = [path]
     while dirs:
         current = dirs.pop()
@@ -632,7 +633,7 @@ def _process_file(path):
     return changed
 
 
-def parse_cli():
+def parse_cli(args=None):
     global WIDTH, CHECK, DIFF, PATHS, VERBOSE
 
     parser = argparse.ArgumentParser(
@@ -662,21 +663,22 @@ def parse_cli():
         help="one or more .rst files or directories to format",
     )
     parser.add_argument(
-        '--verbose', '-v', action='store_true', help="print more info"
+        "--verbose", "-v", action="store_true", help="print more info"
     )
-    args = parser.parse_args()
+    args = parser.parse_args(args)
     WIDTH = args.width
     CHECK = args.check
     DIFF = args.diff
     VERBOSE = args.verbose
 
+    collected = set()
     for path in args.paths:
-        PATHS.update(_collect_rst_files(path))
-    PATHS = sorted(PATHS)
+        collected.update(_collect_rst_files(path))
+    PATHS = sorted(collected)
 
 
-def main():
-    parse_cli()
+def main(args=None):
+    parse_cli(args)
 
     any_changed = False
     for path in PATHS:

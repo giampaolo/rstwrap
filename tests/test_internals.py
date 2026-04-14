@@ -1,6 +1,82 @@
 """Tests for rst_wrap_lines.wrap_rst()."""
 
+import pytest
+
+import rst_wrap_lines
+
 from . import BaseTest
+
+
+class TestCLI:
+    @pytest.fixture(autouse=True)
+    def tmp_rst(self, tmp_path):
+        """Write a sample .rst file into tmp_path and expose both."""
+        self.dir = tmp_path
+        self.rst = tmp_path / "sample.rst"
+        self.rst.write_text("Hello world.\n", encoding="utf-8")
+
+    # --- parse_cli ---
+
+    def test_parse_cli_single_file(self):
+        rst_wrap_lines.parse_cli([str(self.rst)])
+        assert [self.rst] == rst_wrap_lines.PATHS
+
+    def test_parse_cli_directory_collects_rst(self):
+        rst_wrap_lines.parse_cli([str(self.dir)])
+        assert self.rst in rst_wrap_lines.PATHS
+
+    def test_parse_cli_width(self):
+        rst_wrap_lines.parse_cli(["--width", "60", str(self.rst)])
+        assert rst_wrap_lines.WIDTH == 60
+
+    def test_parse_cli_check_flag(self):
+        rst_wrap_lines.parse_cli(["--check", str(self.rst)])
+        assert rst_wrap_lines.CHECK is True
+
+    def test_parse_cli_diff_flag(self):
+        rst_wrap_lines.parse_cli(["--diff", str(self.rst)])
+        assert rst_wrap_lines.DIFF is True
+
+    def test_parse_cli_ignores_dotgit_dir(self):
+        git_dir = self.dir / ".git"
+        git_dir.mkdir()
+        (git_dir / "hidden.rst").write_text("ignored\n", encoding="utf-8")
+        rst_wrap_lines.parse_cli([str(self.dir)])
+        assert not any(".git" in str(p) for p in rst_wrap_lines.PATHS)
+
+    def test_parse_cli_paths_reset_between_calls(self):
+        rst_wrap_lines.parse_cli([str(self.rst)])
+        rst_wrap_lines.parse_cli([str(self.rst)])
+        assert rst_wrap_lines.PATHS.count(self.rst) == 1
+
+    # --- main ---
+
+    def test_main_rewrites_file(self):
+        long_line = "word " * 20 + "\n"
+        self.rst.write_text(long_line, encoding="utf-8")
+        rst_wrap_lines.main([str(self.rst)])
+        result = self.rst.read_text(encoding="utf-8")
+        assert result != long_line
+        for line in result.splitlines():
+            assert len(line) <= 79
+
+    def test_main_check_exits_1_when_changed(self):
+        long_line = "word " * 20 + "\n"
+        self.rst.write_text(long_line, encoding="utf-8")
+        with pytest.raises(SystemExit) as exc_info:
+            rst_wrap_lines.main(["--check", str(self.rst)])
+        assert exc_info.value.code == 1
+
+    def test_main_check_does_not_write(self):
+        long_line = "word " * 20 + "\n"
+        self.rst.write_text(long_line, encoding="utf-8")
+        with pytest.raises(SystemExit):
+            rst_wrap_lines.main(["--check", str(self.rst)])
+        assert self.rst.read_text(encoding="utf-8") == long_line
+
+    def test_main_no_change_exits_0(self):
+        # File already fits within 79 chars; no SystemExit expected.
+        rst_wrap_lines.main(["--check", str(self.rst)])
 
 
 class TestProseParagraphs(BaseTest):
