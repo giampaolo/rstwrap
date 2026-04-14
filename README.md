@@ -16,8 +16,9 @@ pip install rst-wrap-lines
 
 ## Usage
 
-```
+```bash
 rst-wrap-lines docs/*.rst
+rst-wrap-lines docs/                # whole dir, recursive
 rst-wrap-lines --check docs/*.rst
 rst-wrap-lines --width 80 foo.rst
 ```

@@ -573,6 +573,44 @@ def wrap_rst(source, width=WIDTH):
 # ---------------------------------------------------------------------------
 
 
+_IGNORED_DIRS = frozenset([
+    ".git",
+    ".hg",
+    ".svn",
+    ".tox",
+    ".venv",
+    "venv",
+    ".mypy_cache",
+    "__pycache__",
+    "node_modules",
+    "_build",
+    "build",
+    "dist",
+])
+
+
+def _collect_rst_files(path):
+    """Return a list of .rst files for *path*.
+
+    If *path* is a file, return it as-is (a single-element list).
+    If *path* is a directory, recursively collect all .rst files,
+    skipping subdirectories whose name is in _IGNORED_DIRS.
+    """
+    if path.is_file():
+        return [path]
+    rst_files = []
+    dirs = [path]
+    while dirs:
+        current = dirs.pop()
+        for entry in sorted(current.iterdir()):
+            if entry.is_dir():
+                if entry.name not in _IGNORED_DIRS:
+                    dirs.append(entry)
+            elif entry.suffix == ".rst":
+                rst_files.append(entry)
+    return rst_files
+
+
 def _process_file(path):
     src = path.read_text(encoding="utf-8")
     dst = wrap_rst(src, WIDTH)
@@ -599,6 +637,7 @@ def _process_file(path):
 
 def parse_cli():
     global WIDTH, CHECK, DIFF, PATHS
+
     parser = argparse.ArgumentParser(
         description="Wrap RST prose paragraphs to a max line length."
     )
@@ -620,7 +659,10 @@ def parse_cli():
         help="print a unified diff instead of writing files",
     )
     parser.add_argument(
-        "paths", nargs="+", type=Path, help="one or more .rst files to format"
+        "paths",
+        nargs="+",
+        type=Path,
+        help="one or more .rst files or directories to format",
     )
     args = parser.parse_args()
     WIDTH = args.width
@@ -633,8 +675,9 @@ def main():
     parse_cli()
     any_changed = False
     for path in PATHS:
-        if _process_file(path):
-            any_changed = True
+        for rst_file in _collect_rst_files(path):
+            if _process_file(rst_file):
+                any_changed = True
     if CHECK and any_changed:
         sys.exit(1)
 
