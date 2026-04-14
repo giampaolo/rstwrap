@@ -8,7 +8,7 @@ version = "0.1.0"
 requires-python = ">=3.9"
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-instafail", "pytest-xdist", "python-docs-theme", "sphinx>=9.1"]
+test = ["docutils", "pytest", "pytest-instafail", "pytest-xdist"]
 lint = ["black", "ruff", "toml-sort"]
 
 [project.scripts]

@@ -5,12 +5,14 @@ directory and reused across runs. The clone only happens when this
 test class is collected.
 """
 
-import shutil
+import difflib
 import subprocess
-import sys
 from pathlib import Path
 
+import docutils.nodes
 import pytest
+from docutils.core import publish_doctree
+from docutils.utils import Reporter
 
 from rst_wrap_lines import WIDTH
 from rst_wrap_lines import wrap_rst
@@ -20,7 +22,6 @@ from . import has_bare_double_space
 
 CLONE_DIR = Path("/tmp/rst-wrap-lines-cpython")
 DOC_DIR = CLONE_DIR / "Doc"
-DOC_DIR_2 = CLONE_DIR / "Doc-2"
 
 REPO_URL = "https://github.com/python/cpython"
 
@@ -106,45 +107,73 @@ class TestCPythonDocs(BaseTest):
             pytest.fail("\n".join(failures))
 
 
+def _doctree_str(text):
+    """Parse RST and return a normalized document-tree string.
+
+    Whitespace inside text nodes is collapsed so that prose re-wrapping
+    by our tool does not produce false positives.  All other structure
+    (nodes, attributes, nesting) is preserved verbatim.
+    """
+    tree = publish_doctree(
+        text,
+        settings_overrides={
+            # silence stderr noise from Sphinx-specific / unknown directives
+            "report_level": Reporter.SEVERE_LEVEL + 1,
+            "halt_level": Reporter.SEVERE_LEVEL + 1,
+        },
+    )
+    # Remove system_message nodes: they reflect docutils warnings about
+    # Sphinx-specific / unknown directives and parsing ambiguities that
+    # vary with line positions, not document structure.
+    for node in tree.findall(docutils.nodes.system_message):
+        node.parent.remove(node)
+    # Strip source-position attributes: line numbers shift whenever prose
+    # is re-wrapped, so they must not influence the comparison.
+    for node in tree.findall(docutils.nodes.Element):
+        node.attributes.pop("source", None)
+        node.attributes.pop("line", None)
+        node.line = None
+    for node in tree.findall(docutils.nodes.Text):
+        normalized = " ".join(str(node).split())
+        node.parent.replace(node, docutils.nodes.Text(normalized))
+    return tree.pformat()
+
+
 @pytest.mark.slow
-class TestZSphinxBuild(BaseTest):
+class TestZDocutils(BaseTest):
+    """Verify that wrap_rst() does not alter the docutils document tree.
+
+    For every .rst file in the CPython docs, parse both the original and
+    the wrapped version with docutils and compare the resulting trees
+    (after normalising intra-node whitespace).  A difference means the
+    tool changed something structural, not just prose line lengths.
+    """
 
     @classmethod
     def setup_class(cls):
         clone_cpython_repo()
-        # shutil.rmtree(DOC_DIR_2, ignore_errors=True)
-        # shutil.copytree(DOC_DIR, DOC_DIR_2)
 
-    @staticmethod
-    def log(msg):
-        print("\n")
-        print("=" * 70)
-        print(msg)
-        print("=" * 70)
-
-    def test_it(self):
-        sphinx_cmd = [
-            "sphinx-build",
-            "-b",
-            "html",
-            "-D",
-            "html_last_updated_fmt=",
-            ".",
-            "",
-        ]
-
-        # Sphinx build #1.
-        self.log("Build original CPython doc")
-        sphinx_cmd[-1] = "_build/html-1"
-        subprocess.run(sphinx_cmd, cwd=DOC_DIR_2, check=True)
-
-        # Run CLI tool.
-        self.log("Execute CLI tool")
-        cmd = [sys.executable, "-m", "rst_wrap_lines", DOC_DIR_2]
-        subprocess.run(cmd, cwd=DOC_DIR_2, check=True)
-
-        # Sphinx build #2; if something went wrong, we'll crash here
-        # already.
-        self.log("Re-build CPython doc")
-        sphinx_cmd[-1] = "_build/html-2"
-        subprocess.run(sphinx_cmd, cwd=DOC_DIR_2, check=True)
+    def test_doctree_unchanged(self):
+        failures = []
+        rst_files = sorted(DOC_DIR.rglob("*.rst"))
+        assert rst_files, f"no .rst files found under {DOC_DIR}"
+        for path in rst_files:
+            src = path.read_text(encoding="utf-8")
+            out = wrap_rst(src)
+            if src == out:
+                continue
+            s1 = _doctree_str(src)
+            s2 = _doctree_str(out)
+            if s1 != s2:
+                diff = difflib.unified_diff(
+                    s1.splitlines(),
+                    s2.splitlines(),
+                    fromfile=f"{path.name} (original)",
+                    tofile=f"{path.name} (wrapped)",
+                    lineterm="",
+                    n=2,
+                )
+                print(diff)
+                failures.append("\n".join(diff))
+        if failures:
+            pytest.fail("\n\n".join(failures))
