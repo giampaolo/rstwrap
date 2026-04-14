@@ -183,6 +183,16 @@ class TestPassthrough(BaseTest):
         assert out == src
         self.check_all(src, out)
 
+    def test_short_underline_not_treated_as_title(self):
+        # An underline shorter than the preceding text is not a title
+        # (docutils treats it as prose). The tool must not merge the
+        # text line with the underline as if it were a title, and must
+        # not merge the underline into following prose either.
+        src = "Long line of text that is not a title\n---\nMore prose.\n"
+        out = self.wrap(src)
+        assert out == src
+        self.check_all(src, out)
+
     def test_literal_block_unchanged(self):
         src = "Example::\n\n    some code here    with spaces\n"
         out = self.wrap(src)
@@ -392,6 +402,19 @@ class TestListItems(BaseTest):
         assert out == src
         self.check_all(src, out)
 
+    def test_dash_bullet_wrapped(self):
+        # Dash is a valid bullet marker and must wrap like * and +.
+        src = (
+            "- This dash bullet item is quite long and should be"
+            " wrapped by the tool because it exceeds the max width.\n"
+        )
+        out = self.wrap(src)
+        for line in out.splitlines():
+            assert len(line) <= self.WIDTH
+        # Continuation must be indented to the text column (2 chars).
+        assert "\n  " in out
+        self.check_all(src, out)
+
     def test_enumerated_list_wrapped(self):
         src = (
             "1. This enumerated item is quite long and should be"
@@ -406,6 +429,39 @@ class TestListItems(BaseTest):
         src = "(1) Short item.\n"
         out = self.wrap(src)
         assert out == src
+        self.check_all(src, out)
+
+    def test_enumerated_close_paren_wrapped(self):
+        # "1)" form must be recognised as enumerated and wrap correctly.
+        src = (
+            "1) This enumerated item is quite long and should be"
+            " wrapped by the tool because it exceeds the max width.\n"
+        )
+        out = self.wrap(src)
+        for line in out.splitlines():
+            assert len(line) <= self.WIDTH
+        self.check_all(src, out)
+
+    def test_enumerated_alpha_wrapped(self):
+        # "a." form must be recognised as enumerated and wrap correctly.
+        src = (
+            "a. This enumerated item is quite long and should be"
+            " wrapped by the tool because it exceeds the max width.\n"
+        )
+        out = self.wrap(src)
+        for line in out.splitlines():
+            assert len(line) <= self.WIDTH
+        self.check_all(src, out)
+
+    def test_enumerated_auto_wrapped(self):
+        # "#." auto-enumerated form must be recognised and wrap.
+        src = (
+            "#. This enumerated item is quite long and should be"
+            " wrapped by the tool because it exceeds the max width.\n"
+        )
+        out = self.wrap(src)
+        for line in out.splitlines():
+            assert len(line) <= self.WIDTH
         self.check_all(src, out)
 
     def test_multiline_bullet_continuation_wrapped(self):
