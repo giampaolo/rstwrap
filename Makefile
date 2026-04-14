@@ -23,6 +23,9 @@ clean:  ## Remove all build/temp files.
 test:  ## Run tests.
 	$(PYTHON) -m pytest $(ARGS)
 
+test-slow:  ## Run all tests, including slow ones.
+	$(MAKE) test ARGS="-m ''"
+
 _ls = $(if $(FILES), printf '%s\n' $(FILES), git ls-files $(1))
 
 ruff:  ## Run ruff linter.

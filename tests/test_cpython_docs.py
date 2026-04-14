@@ -106,6 +106,7 @@ class TestCPythonDocs(BaseTest):
             pytest.fail("\n".join(failures))
 
 
+@pytest.mark.slow
 class TestZSphinxBuild(BaseTest):
 
     @classmethod

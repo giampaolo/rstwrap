@@ -17,7 +17,7 @@ rst-wrap-lines = "rst_wrap_lines:main"
 [tool.setuptools]
 py-modules = ["rst_wrap_lines"]
 
-[tool.pytest]
+[tool.pytest.ini_options]
 addopts = [
     "--capture=no",
     "--instafail",
@@ -32,10 +32,15 @@ addopts = [
     "-p no:nose",
     "-p no:pastebin",
     "-p xdist",
+    "-m",
+    "not slow",
 ]
 verbosity_subtests = "0"
 testpaths = ["tests/"]
 python_files = ["test_*.py"]
+markers = [
+    "slow: marks tests as slow (deselected by default; run with -m '')",
+]
 
 [tool.black]
 target-version = ["py39"]

@@ -21,6 +21,6 @@ jobs:
     - name: Run tests
       run: |
         pip install .[test]
-        make test
+        make test ARGS="-m ''"
         # pip install .[lint]
         # make lint-all
