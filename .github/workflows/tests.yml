@@ -1,0 +1,26 @@
+on: [push, pull_request]
+name: tests
+concurrency:
+  # Cancel build if a new one starts, but don't interrupt all jobs on the first
+  # failure.
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.10"
+    - name: Run tests
+      run: |
+        pip install .[test]
+        make test
+        # pip install .[lint]
+        # make lint-all

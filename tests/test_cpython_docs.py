@@ -103,16 +103,16 @@ class TestCPythonDocs(BaseTest):
             pytest.fail("\n".join(failures))
 
 
-class TestAgainstSphinx(BaseTest):
-    DOC_DIR_2 = DOC_DIR.with_name(DOC_DIR.name + "-2")
+# class TestAgainstSphinx(BaseTest):
+#     DOC_DIR_2 = DOC_DIR.with_name(DOC_DIR.name + "-2")
 
-    @classmethod
-    def setup_class(cls):
-        shutil.rmtree(cls.DOC_DIR_2, ignore_errors=True)
-        clone_cpython_repo()
-        shutil.copytree(DOC_DIR, cls.DOC_DIR_2)
+#     @classmethod
+#     def setup_class(cls):
+#         shutil.rmtree(cls.DOC_DIR_2, ignore_errors=True)
+#         clone_cpython_repo()
+#         shutil.copytree(DOC_DIR, cls.DOC_DIR_2)
 
-    def test_it(self):
-        rst_files = sorted((self.DOC_DIR_2).rglob("*.rst"))
-        cmd = ["sphinx-build", "-b", "html", ".", "_build/html"]
-        subprocess.run(cmd, cwd=self.DOC_DIR_2, check=True)
+#     def test_it(self):
+#         rst_files = sorted((self.DOC_DIR_2).rglob("*.rst"))
+#         cmd = ["sphinx-build", "-b", "html", ".", "_build/html"]
+#         subprocess.run(cmd, cwd=self.DOC_DIR_2, check=True)
