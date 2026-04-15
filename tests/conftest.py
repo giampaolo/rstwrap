@@ -7,6 +7,7 @@ SQLALCHEMY_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-sqlalchemy")
 PYTEST_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-pytest")
 LINUX_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-linux")
 PEPS_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-peps")
+ANSIBLE_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-ansible")
 
 _REPOS = [
     {
@@ -44,6 +45,12 @@ _REPOS = [
         "clone_dir": PEPS_CLONE_DIR,
         "branch": "main",
         "sparse_dir": "peps/",
+    },
+    {
+        "url": "https://github.com/ansible/ansible-documentation",
+        "clone_dir": ANSIBLE_CLONE_DIR,
+        "branch": "devel",
+        "sparse_dir": "docs/docsite/rst/",
     },
 ]
 
