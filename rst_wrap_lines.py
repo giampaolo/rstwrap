@@ -752,88 +752,74 @@ def _collect_rst_files(path):
                 yield entry
 
 
-def _process_file(path):
-    """Process one file.
-
-    Returns (changed, safety_failed) where *safety_failed* is True only
-    when ``--safe`` was requested and the output doctree differs from
-    the source. When safety fails, the file is NOT written regardless
-    of other flags.
+def _safety_check_failed(src, dst, label):
+    """Run ``--safe`` post-check; on doctree mismatch, emit stderr
+    diagnostics and return True so the caller can skip writing.
     """
-    src = path.read_text(encoding="utf-8")
+    if not SAFE or src == dst:
+        return False
+    tree_diff = _doctree_diff(src, dst)
+    if tree_diff is None:
+        return False
+    print(
+        f"{label}: --safe check failed; output doctree differs from"
+        " source; nothing written",
+        file=sys.stderr,
+    )
+    print(tree_diff, file=sys.stderr)
+    return True
+
+
+def _process(src, *, label, diff_dst_label, write_fn, log_changes):
+    """Shared core for file and stdin processing.
+    Returns (changed, safety_failed).
+    """
     dst = wrap_rst(src, WIDTH, join=JOIN)
     changed = dst != src
-
-    if SAFE and changed:
-        tree_diff = _doctree_diff(src, dst)
-        if tree_diff is not None:
-            print(
-                f"{path}: --safe check failed; output doctree differs"
-                " from source; file left unchanged",
-                file=sys.stderr,
-            )
-            print(tree_diff, file=sys.stderr)
-            return changed, True
-
-    if DIFF:
-        if changed:
-            diff = difflib.unified_diff(
-                src.splitlines(keepends=True),
-                dst.splitlines(keepends=True),
-                fromfile=str(path),
-                tofile=str(path),
-            )
-            sys.stdout.writelines(diff)
-        return changed, False
-    if CHECK:
-        if changed:
-            print(f"would reformat {path}")
-        return changed, False
-    if changed:
-        path.write_text(dst, encoding="utf-8")
-        print(f"reformatted {path}")
-    return changed, False
-
-
-def _process_stdin():
-    """Read RST from stdin, write the wrapped result to stdout.
-
-    Honours ``--check`` (no stdout output, exit 1 if changed),
-    ``--diff`` (write unified diff to stdout), and ``--safe`` (exit 1
-    on doctree mismatch, leaving stdout empty so the caller doesn't
-    accidentally apply a broken result).
-    """
-    src = sys.stdin.read()
-    dst = wrap_rst(src, WIDTH, join=JOIN)
-    changed = dst != src
-
-    if SAFE and changed:
-        tree_diff = _doctree_diff(src, dst)
-        if tree_diff is not None:
-            print(
-                "<stdin>: --safe check failed; output doctree differs"
-                " from source; nothing written",
-                file=sys.stderr,
-            )
-            print(tree_diff, file=sys.stderr)
-            return changed, True
-
+    if _safety_check_failed(src, dst, label):
+        return changed, True
     if DIFF:
         if changed:
             sys.stdout.writelines(
                 difflib.unified_diff(
                     src.splitlines(keepends=True),
                     dst.splitlines(keepends=True),
-                    fromfile="<stdin>",
-                    tofile="<stdout>",
+                    fromfile=label,
+                    tofile=diff_dst_label,
                 )
             )
         return changed, False
     if CHECK:
-        # silent in --check mode; exit code carries the signal.
+        if changed and log_changes:
+            print(f"would reformat {label}")
         return changed, False
-    sys.stdout.write(dst)
+    if changed:
+        write_fn(dst)
+        if log_changes:
+            print(f"reformatted {label}")
     return changed, False
+
+
+def _process_file(path):
+    src = path.read_text(encoding="utf-8")
+    return _process(
+        src,
+        label=str(path),
+        diff_dst_label=str(path),
+        write_fn=lambda dst: path.write_text(dst, encoding="utf-8"),
+        log_changes=True,
+    )
+
+
+def _process_stdin():
+    src = sys.stdin.read()
+    return _process(
+        src,
+        label="<stdin>",
+        diff_dst_label="<stdout>",
+        write_fn=sys.stdout.write,
+        log_changes=False,
+    )
 
 
 def parse_cli(args=None):

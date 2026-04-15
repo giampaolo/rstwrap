@@ -1,5 +1,6 @@
-import pytest
 import io
+
+import pytest
 
 import rst_wrap_lines
 
