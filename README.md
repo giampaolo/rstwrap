@@ -130,8 +130,10 @@ are left intact.
 
 ## Tested against real-world docs
 
-The integration test suite runs against a large corpus of real-world `.rst`
-files (~1,800 in total) from several upstream projects:
+This tool fills a very specific niche: formatting reStructuredText (RST)
+**without breaking the semantic structure of the document**. The integration
+test suite runs against a large corpus of real-world `.rst` files (~15.000 in
+total) from several upstream projects:
 
 - [CPython](https://github.com/python/cpython/tree/main/Doc) (~550 files)
 - [Sphinx](https://github.com/sphinx-doc/sphinx/tree/master/doc) (~160 files)
@@ -145,13 +147,13 @@ files (~1,800 in total) from several upstream projects:
 
 For every file the suite verifies:
 
-- **Idempotency** — running the tool twice produces the same output as
+- **Idempotency**: running the tool twice produces the same output as
   running it once.
-- **Width** — no tool-produced line exceeds the target width (verbatim
+- **Width**: no tool-produced line exceeds the target width (verbatim
   passthrough of already-long source lines is allowed).
-- **No double spaces** — no tool-produced prose line contains a bare
+- **No double spaces**: no tool-produced prose line contains a bare
   double space.
-- **Document tree invariant** — parsing the original and the wrapped
+- **Document tree invariant**: parsing the original and the wrapped
   file with [docutils](https://docutils.sourceforge.io/) produces
   identical document trees (after normalising intra-node whitespace).
   This confirms that rewrapping prose never alters headings, directives,
