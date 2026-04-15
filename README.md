@@ -93,6 +93,27 @@ extension:
     (goto-char p)))
 ```
 
+## GitHub Actions
+
+Drop the following workflow into `.github/workflows/rst-wrap-lines.yml` to fail
+CI on any `.rst` file that isn't already wrapped. Adjust `docs/` to wherever
+your `.rst` files live.
+
+```yaml
+name: rst-wrap-lines
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - run: pip install 'rst-wrap-lines[safe]'
+      - run: rst-wrap-lines --check --diff --safe docs/
+```
+
 ## Configuration via pyproject.toml
 
 Project-wide defaults can be set in a `[tool.rst-wrap-lines]` section of
