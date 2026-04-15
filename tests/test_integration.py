@@ -6,6 +6,7 @@ Currently includes:
 - Sphinx documentation (doc/, ~100 files)
 - SQLAlchemy documentation (doc/build/)
 - pytest documentation (doc/en/)
+- Linux kernel documentation (Documentation/)
 
 Each .rst file is a separate parametrized test item, so that
 pytest-xdist can distribute them across workers.
@@ -29,6 +30,7 @@ from rst_wrap_lines import wrap_rst
 from . import BaseTest
 from . import has_bare_double_space
 from .conftest import CLONE_DIR
+from .conftest import LINUX_CLONE_DIR
 from .conftest import PYTEST_CLONE_DIR
 from .conftest import SPHINX_CLONE_DIR
 from .conftest import SQLALCHEMY_CLONE_DIR
@@ -41,6 +43,7 @@ _SOURCES = [
     (SPHINX_CLONE_DIR / "doc", "sphinx"),
     (SQLALCHEMY_CLONE_DIR / "doc" / "build", "sqlalchemy"),
     (PYTEST_CLONE_DIR / "doc" / "en", "pytest"),
+    (LINUX_CLONE_DIR / "Documentation", "linux"),
 ]
 
 # Build (path, id_string) pairs so that files with the same name from

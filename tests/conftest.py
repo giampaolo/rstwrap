@@ -5,6 +5,7 @@ CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-cpython")
 SPHINX_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-sphinx")
 SQLALCHEMY_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-sqlalchemy")
 PYTEST_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-pytest")
+LINUX_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-linux")
 
 _REPOS = [
     {
@@ -30,6 +31,12 @@ _REPOS = [
         "clone_dir": PYTEST_CLONE_DIR,
         "branch": "main",
         "sparse_dir": "doc/en/",
+    },
+    {
+        "url": "https://github.com/torvalds/linux",
+        "clone_dir": LINUX_CLONE_DIR,
+        "branch": "master",
+        "sparse_dir": "Documentation/",
     },
 ]
 

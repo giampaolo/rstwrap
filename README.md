@@ -115,6 +115,7 @@ files (~1,800 in total) from several upstream projects:
 
 - [CPython](https://github.com/python/cpython/tree/main/Doc) (~550 files)
 - [Sphinx](https://github.com/sphinx-doc/sphinx/tree/master/doc) (~160 files)
+- [Linux](https://github.com/torvalds/linux/tree/master/Documentation) (~1000 files)
 - [SQLAlchemy](https://github.com/sqlalchemy/sqlalchemy/tree/main/doc/build) (~200 files)
 - [pytest](https://github.com/pytest-dev/pytest/tree/main/doc/en) (~260 files)
 
