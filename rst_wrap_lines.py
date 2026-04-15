@@ -463,7 +463,17 @@ def _handle_list_run(lines, i, n, width, join):
         fits_verbatim = all(len(ln) <= width for ln in original) and not (
             join and len(original) > 1
         )
-        if fits_verbatim or visually_attached or prose_ambiguity:
+        # Line-block body: the item's body is an RST line block (each
+        # line prefixed with ``|``). Merging those lines into a single
+        # paragraph destroys the ``<line_block>`` structure, so always
+        # keep such items verbatim regardless of width or ``--join``.
+        line_block_body = rest.startswith("| ") or rest == "|"
+        if (
+            fits_verbatim
+            or visually_attached
+            or prose_ambiguity
+            or line_block_body
+        ):
             emitted.extend(original)
         else:
             initial = indent + bullet + " "
