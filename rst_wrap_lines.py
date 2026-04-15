@@ -724,13 +724,16 @@ def _doctree_diff(src, dst):
                 "halt_level": Reporter.SEVERE_LEVEL + 1,
             },
         )
-        for node in tree.findall(docutils.nodes.system_message):
+        # ``findall`` returns a generator; removing/replacing nodes
+        # during iteration causes the traversal to skip siblings.
+        # Materialize before mutating.
+        for node in list(tree.findall(docutils.nodes.system_message)):
             node.parent.remove(node)
         for node in tree.findall(docutils.nodes.Element):
             node.attributes.pop("source", None)
             node.attributes.pop("line", None)
             node.line = None
-        for node in tree.findall(docutils.nodes.Text):
+        for node in list(tree.findall(docutils.nodes.Text)):
             normalized = " ".join(str(node).split())
             node.parent.replace(node, docutils.nodes.Text(normalized))
         return tree.pformat()
