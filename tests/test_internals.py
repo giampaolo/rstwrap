@@ -575,3 +575,53 @@ class TestJoin(BaseTest):
         src = "foo\nbar\nzoo\n"
         out = rst_wrap_lines.wrap_rst(src)
         assert out == src
+
+
+class TestSafe:
+    """Exercise the opt-in ``--safe`` doctree verification path."""
+
+    def test_doctree_diff_returns_none_for_equal_trees(self):
+        # Identical text: doctrees match, helper returns None.
+        assert rst_wrap_lines._doctree_diff("Hello.\n", "Hello.\n") is None
+
+    def test_doctree_diff_normalizes_whitespace(self):
+        # Prose rewrap (different line breaks, same text): trees match
+        # after whitespace normalization.
+        src = "Hello world foo bar.\n"
+        out = "Hello\nworld foo bar.\n"
+        assert rst_wrap_lines._doctree_diff(src, out) is None
+
+    def test_doctree_diff_detects_structural_change(self):
+        # Paragraph vs. section title: structural difference.
+        src = "Hello world.\n"
+        dst = "Hello\n=====\n"
+        diff = rst_wrap_lines._doctree_diff(src, dst)
+        assert diff is not None
+        assert "paragraph" in diff or "title" in diff
+
+    def test_main_safe_flag_accepted(self, tmp_path):
+        # --safe runs without error on a file whose wrap output is
+        # doctree-equivalent (the common case).
+        rst = tmp_path / "sample.rst"
+        long_line = "word " * 20 + "\n"
+        rst.write_text(long_line, encoding="utf-8")
+        rst_wrap_lines.main(["--safe", str(rst)])
+        # File was rewritten; content changed.
+        assert rst.read_text(encoding="utf-8") != long_line
+
+    def test_main_safe_refuses_write_on_mismatch(self, tmp_path, monkeypatch):
+        # Simulate a buggy wrap by monkey-patching wrap_rst to return
+        # something structurally different from the source. --safe must
+        # detect the mismatch, leave the file unchanged, and exit 1.
+        rst = tmp_path / "sample.rst"
+        src = "Hello world.\n"
+        rst.write_text(src, encoding="utf-8")
+
+        def fake_wrap(text, width=79, join=False):
+            return "Hello\n=====\n"
+
+        monkeypatch.setattr(rst_wrap_lines, "wrap_rst", fake_wrap)
+        with pytest.raises(SystemExit) as exc_info:
+            rst_wrap_lines.main(["--safe", str(rst)])
+        assert exc_info.value.code == 1
+        assert rst.read_text(encoding="utf-8") == src

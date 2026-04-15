@@ -56,6 +56,7 @@ Usage::
     rst-wrap-lines --check docs/*.rst
     rst-wrap-lines --width 80 foo.rst
     rst-wrap-lines --join docs/*.rst    # also merge short lines onto one
+    rst-wrap-lines --safe docs/*.rst    # verify doctree via docutils
 """
 
 import argparse
@@ -72,6 +73,7 @@ WIDTH = 79
 CHECK = False
 DIFF = False
 JOIN = False
+SAFE = False
 PATHS = set()
 
 IGNORED_DIRS = frozenset([
@@ -672,6 +674,62 @@ def wrap_rst(source, width=WIDTH, join=False):
 # ---------------------------------------------------------------------------
 
 
+def _doctree_diff(src, dst):
+    """Return a short unified diff if the doctrees of *src* and *dst*
+    differ, otherwise ``None``.
+
+    Used by the ``--safe`` post-check: parse both texts with docutils,
+    compare after stripping source-position attributes and normalizing
+    whitespace inside Text nodes. docutils is imported lazily so users
+    who don't opt in don't pay the import cost.
+    """
+    try:
+        import docutils.nodes
+        from docutils.core import publish_doctree
+        from docutils.utils import Reporter
+    except ImportError:
+        print(
+            "--safe requires docutils; install with:"
+            "  pip install rst-wrap-lines[safe]",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
+    def _norm(text):
+        tree = publish_doctree(
+            text,
+            settings_overrides={
+                "report_level": Reporter.SEVERE_LEVEL + 1,
+                "halt_level": Reporter.SEVERE_LEVEL + 1,
+            },
+        )
+        for node in tree.findall(docutils.nodes.system_message):
+            node.parent.remove(node)
+        for node in tree.findall(docutils.nodes.Element):
+            node.attributes.pop("source", None)
+            node.attributes.pop("line", None)
+            node.line = None
+        for node in tree.findall(docutils.nodes.Text):
+            normalized = " ".join(str(node).split())
+            node.parent.replace(node, docutils.nodes.Text(normalized))
+        return tree.pformat()
+
+    s1 = _norm(src)
+    s2 = _norm(dst)
+    if s1 == s2:
+        return None
+    return "\n".join(
+        difflib.unified_diff(
+            s1.splitlines(),
+            s2.splitlines(),
+            fromfile="source doctree",
+            tofile="output doctree",
+            lineterm="",
+            n=2,
+        )
+    )
+
+
 def _collect_rst_files(path):
     """Return a list of .rst files for *path*.
 
@@ -694,9 +752,28 @@ def _collect_rst_files(path):
 
 
 def _process_file(path):
+    """Process one file.
+
+    Returns (changed, safety_failed) where *safety_failed* is True only
+    when ``--safe`` was requested and the output doctree differs from
+    the source. When safety fails, the file is NOT written regardless
+    of other flags.
+    """
     src = path.read_text(encoding="utf-8")
     dst = wrap_rst(src, WIDTH, join=JOIN)
     changed = dst != src
+
+    if SAFE and changed:
+        tree_diff = _doctree_diff(src, dst)
+        if tree_diff is not None:
+            print(
+                f"{path}: --safe check failed; output doctree differs"
+                " from source; file left unchanged",
+                file=sys.stderr,
+            )
+            print(tree_diff, file=sys.stderr)
+            return changed, True
+
     if DIFF:
         if changed:
             diff = difflib.unified_diff(
@@ -706,19 +783,19 @@ def _process_file(path):
                 tofile=str(path),
             )
             sys.stdout.writelines(diff)
-        return changed
+        return changed, False
     if CHECK:
         if changed:
             print(f"would reformat {path}")
-        return changed
+        return changed, False
     if changed:
         path.write_text(dst, encoding="utf-8")
         print(f"reformatted {path}")
-    return changed
+    return changed, False
 
 
 def parse_cli(args=None):
-    global WIDTH, CHECK, DIFF, JOIN, PATHS
+    global WIDTH, CHECK, DIFF, JOIN, SAFE, PATHS
 
     parser = argparse.ArgumentParser(
         description="Wrap RST prose paragraphs to a max line length."
@@ -749,6 +826,15 @@ def parse_cli(args=None):
         ),
     )
     parser.add_argument(
+        "--safe",
+        action="store_true",
+        help=(
+            "after wrapping, verify with docutils that the output has"
+            " the same document tree as the input; refuse to write"
+            " files whose tree would change (requires docutils)"
+        ),
+    )
+    parser.add_argument(
         "paths",
         nargs="+",
         type=Path,
@@ -759,6 +845,7 @@ def parse_cli(args=None):
     CHECK = args.check
     DIFF = args.diff
     JOIN = args.join
+    SAFE = args.safe
 
     collected = set()
     for path in args.paths:
@@ -770,11 +857,15 @@ def main(args=None):
     parse_cli(args)
 
     any_changed = False
+    any_safety_failed = False
     for path in PATHS:
-        if _process_file(path):
+        changed, safety_failed = _process_file(path)
+        if changed:
             any_changed = True
+        if safety_failed:
+            any_safety_failed = True
 
-    if CHECK and any_changed:
+    if any_safety_failed or (CHECK and any_changed):
         sys.exit(1)
 
 

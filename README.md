@@ -22,6 +22,7 @@ rst-wrap-lines docs/                # whole dir, recursive
 rst-wrap-lines --check docs/*.rst
 rst-wrap-lines --width 80 foo.rst
 rst-wrap-lines --join docs/*.rst    # also merge short consecutive lines
+rst-wrap-lines --safe docs/*.rst    # verify output with docutils
 ```
 
 Options:
@@ -36,6 +37,17 @@ Options:
   foo         →   foo bar zoo
   bar
   zoo
+  ```
+
+- `--safe` — after wrapping, parse both the input and the output with
+  [docutils](https://docutils.sourceforge.io/) and compare the resulting
+  document trees. Any file whose tree would change is left untouched and
+  a diff is printed to stderr; the process then exits with code 1. Use
+  this as a defensive check in CI or on first-time runs against an
+  unfamiliar corpus. Requires docutils:
+
+  ```
+  pip install 'rst-wrap-lines[safe]'
   ```
 
 ## What gets wrapped
