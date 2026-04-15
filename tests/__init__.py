@@ -109,8 +109,16 @@ class BaseTest:
         whitespace-only lines (e.g. ``"  "``) or form-feed characters
         on their own line, neither of which is a tool bug.
         """
-        src_blanks = sum(1 for ln in src.splitlines() if not ln.strip())
-        out_blanks = sum(1 for ln in out.splitlines() if not ln.strip())
+        # ``rstrip`` before ``splitlines`` drops trailing whitespace and
+        # trailing blank lines from both sides, so a whitespace-only
+        # final "line" without a terminating newline (which the tool
+        # strips away) doesn't throw off the count.
+        src_blanks = sum(
+            1 for ln in src.rstrip().splitlines() if not ln.strip()
+        )
+        out_blanks = sum(
+            1 for ln in out.rstrip().splitlines() if not ln.strip()
+        )
         assert (
             src_blanks == out_blanks
         ), f"blank line count changed: {src_blanks} -> {out_blanks}"

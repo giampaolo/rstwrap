@@ -588,6 +588,15 @@ def wrap_rst(source, width=WIDTH, join=False):
     # meaningful in RST (the doctree ignores it) and stripping here
     # means downstream handlers can't accidentally preserve it.
     lines = [ln.rstrip() for ln in source.splitlines()]
+    # Edge case: if the source ends with a whitespace-only "line"
+    # without a terminating newline (e.g. ``"foo\n   "``), splitlines
+    # produces a trailing ``"   "`` which we rstrip to ``""``. When
+    # joined with ``\n`` that empty tail would introduce a trailing
+    # newline the source didn't have. Drop empty trailing lines in
+    # that case so the trailing-newline presence is preserved.
+    if not source.endswith("\n"):
+        while lines and not lines[-1]:
+            lines.pop()
     out = []
     i = 0
     n = len(lines)

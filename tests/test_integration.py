@@ -9,6 +9,7 @@ Currently includes:
 - Linux kernel documentation (Documentation/)
 - Python PEPs (peps/)
 - Ansible documentation (docs/docsite/rst/)
+- NumPy documentation (doc/source/)
 
 Each .rst file is a separate parametrized test item, so that
 pytest-xdist can distribute them across workers.
@@ -37,6 +38,7 @@ from . import has_bare_double_space
 from .conftest import ANSIBLE_CLONE_DIR
 from .conftest import CLONE_DIR
 from .conftest import LINUX_CLONE_DIR
+from .conftest import NUMPY_CLONE_DIR
 from .conftest import PEPS_CLONE_DIR
 from .conftest import PYTEST_CLONE_DIR
 from .conftest import SPHINX_CLONE_DIR
@@ -59,6 +61,7 @@ _SOURCES = [
     (LINUX_CLONE_DIR / "Documentation", "linux"),
     (PEPS_CLONE_DIR / "peps", "peps"),
     (ANSIBLE_CLONE_DIR / "docs" / "docsite" / "rst", "ansible"),
+    (NUMPY_CLONE_DIR / "doc" / "source", "numpy"),
 ]
 
 # Build (path, id_string) pairs so that files with the same name from

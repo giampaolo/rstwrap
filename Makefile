@@ -41,6 +41,9 @@ test-peps:  ## Run only the Python PEPs corpus integration tests.
 test-ansible:  ## Run only the Ansible corpus integration tests.
 	$(PYTHON) -m pytest -n auto -k "ansible/" tests/test_integration.py $(ARGS)
 
+test-numpy:  ## Run only the NumPy corpus integration tests.
+	$(PYTHON) -m pytest -n auto -k "numpy/" tests/test_integration.py $(ARGS)
+
 _ls = $(if $(FILES), printf '%s\n' $(FILES), git ls-files $(1))
 
 ruff:  ## Run ruff linter.

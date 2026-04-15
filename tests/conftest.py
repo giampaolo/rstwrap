@@ -8,6 +8,7 @@ PYTEST_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-pytest")
 LINUX_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-linux")
 PEPS_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-peps")
 ANSIBLE_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-ansible")
+NUMPY_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-numpy")
 
 _REPOS = [
     {
@@ -51,6 +52,12 @@ _REPOS = [
         "clone_dir": ANSIBLE_CLONE_DIR,
         "branch": "devel",
         "sparse_dir": "docs/docsite/rst/",
+    },
+    {
+        "url": "https://github.com/numpy/numpy",
+        "clone_dir": NUMPY_CLONE_DIR,
+        "branch": "main",
+        "sparse_dir": "doc/source/",
     },
 ]
 
