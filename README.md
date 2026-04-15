@@ -69,9 +69,9 @@ to find the nearest one. Supported keys:
 
 ```toml
 [tool.rst-wrap-lines]
-width = 79     # int
-join = true    # bool
-safe = true    # bool
+width = 79
+join = true
+safe = true
 ```
 
 Command-line flags **override** anything set in `pyproject.toml`. To turn

@@ -2,58 +2,12 @@
 
 """Wrap RST prose paragraphs to a maximum line length.
 
-Only prose paragraphs and list items are re-wrapped. Everything else
-(directives, literal blocks, tables, section underlines, comments,
-indented blocks) is passed through byte-identical. Inline RST
-constructs that contain internal whitespace (``like this``,
-:role:`display <target>`, `text <url>`_, *emphasis*, **bold**, ...)
-are treated as atomic tokens and never broken across lines.
-
-Double spaces in prose paragraphs are removed (e.g. ``hello  world``
-→ ``hello world``), even when the paragraph already fits within the
-target width. Inline RST constructs that intentionally contain spaces
-(`` ``like  this`` ``, ``*two words*``) are protected and left intact.
-
-If a paragraph already fits within the target width and contains no
-redundant spaces, it is emitted unchanged -- so clean files produce a
-zero-byte diff.
-
-Limitations
------------
-
-Prose-body directives (``.. class::``, ``.. method::``, ``.. note::``,
-``.. warning::``, ``.. versionadded::``, ...) have their body
-recursively wrapped at the body's own indent. Other directives are
-treated as opaque -- the marker line plus all following indented lines
-are passed through verbatim. This keeps us safe on literal-body
-directives (``.. code-block::``, ``.. literalinclude::``, ``.. raw::``,
-``.. image::``, ...) without hand-maintaining their content models. The
-whitelist lives in ``_PROSE_BODY_DIRECTIVES`` below.
-
-Other indented content at column 0 is passed through verbatim:
-
-- Literal blocks (indented block introduced by ``::``).
-- Block quotes.
-- Bare nested list items (a bullet that's not inside a prose-body
-  directive cannot be told apart from a directive-body item without
-  parser-level context).
-
-Additionally:
-
-- Definition-list terms are passed through verbatim -- wrapping would
-  split one term across two unindented lines, producing two terms in
-  the parsed document.  The definition body is indented and therefore
-  also passed through verbatim by the indented-block rule above.
-- Option list items (``-x``, ``--foo``) are passed through verbatim.
-- Tables (both grid and simple) are passed through verbatim.
-
-This tool is a minimal-diff wrapper for prose paragraphs, not a
-general-purpose RST formatter.
-
-Usage::
+Example usages:
 
     rst-wrap-lines docs/*.rst
+    rst-wrap-lines docs/                # recurse into a directory
     rst-wrap-lines --check docs/*.rst
+    rst-wrap-lines --diff docs/*.rst    # print unified diff, don't write
     rst-wrap-lines --width 80 foo.rst
     rst-wrap-lines --join docs/*.rst    # also merge short lines onto one
     rst-wrap-lines --safe docs/*.rst    # verify doctree via docutils
