@@ -50,7 +50,7 @@ from .conftest import SQLALCHEMY_CLONE_DIR
 # followed by one or more spaces). Used in test_all to skip the
 # general double-space check on list-item lines -- list items may
 # legitimately have 2+ spaces between the bullet and the text.
-_LIST_ITEM_LEAD_RE = re.compile(r"^\s*([-*+]|\d+[.)]|\(\d+\))\s+")
+_LIST_ITEM_LEAD_RE = re.compile(r"^\s*([-*+]|\d+[.)]|\(\d+\)|#\.)\s+")
 
 _LOCAL_RST_DIR = pathlib.Path(__file__).parent / "rst"
 

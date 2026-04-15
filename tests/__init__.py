@@ -20,7 +20,7 @@ _INLINE_MASK_RE = re.compile(
 _HYPERLINK_TARGET_RE = re.compile(r"^\.\. _[^:]+: \S")
 
 # Matches list item first lines (bullet or enumerated).
-_LIST_ITEM_RE = re.compile(r"^(\s*)([-*+]|\d+[.)]) ")
+_LIST_ITEM_RE = re.compile(r"^(\s*)([-*+]|\d+[.)]|#\.)\s+")
 
 # Matches directive marker lines: .. foo:: or .. domain:foo::
 _DIRECTIVE_RE = re.compile(r"^\s*\.\. \w[\w:+.-]*::")
