@@ -176,7 +176,12 @@ def _wrap_paragraph(text, width, initial_indent="", subsequent_indent=""):
 # Block segmentation
 # ---------------------------------------------------------------------------
 
-_UNDERLINE_CHARS = frozenset("=-~^\"'`#+<>_*:.!?")
+# Docutils accepts any non-alphanumeric printable 7-bit ASCII
+# punctuation as a section adornment character. Matches the
+# ``nonalphanum7bit`` character class in docutils' rst parser.
+_UNDERLINE_CHARS = frozenset(
+    "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+)
 
 # Directive with ``::`` terminator. Optional domain prefix (``py:``,
 # ``c:``, ...). Group 1 is the bare directive name (used for the
