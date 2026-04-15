@@ -260,18 +260,18 @@ def _is_underline(line):
 
 
 def _is_short_underline(line):
-    """True if the line is a 2-char section underline (e.g. ``--`` under
-    a 2-letter module name like ``io``).
+    """True if the line is a 1-2 char section underline (e.g. ``--``
+    under a 2-letter module name like ``io``, or ``-`` under a 1-letter
+    title like ``R``).
 
-    Excludes ``::`` and ``..`` which have dedicated meanings elsewhere.
-    Used by ``_handle_prose`` to avoid joining a short title into its
-    underline in ``join`` mode.
+    Excludes ``::``, ``..``, and bare ``:`` / ``.`` which have
+    dedicated meanings elsewhere.
     """
     s = line.rstrip()
-    if len(s) != 2 or s in {"::", ".."}:
+    if len(s) not in (1, 2) or s in {"::", "..", ":", "."}:
         return False
     c = s[0]
-    return c in _UNDERLINE_CHARS and s[1] == c
+    return c in _UNDERLINE_CHARS and all(ch == c for ch in s)
 
 
 # Field list item: ':field name: value'. Field names may contain spaces
