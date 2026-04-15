@@ -737,6 +737,14 @@ def wrap_rst(source, width=WIDTH, join=False):
 # ---------------------------------------------------------------------------
 
 
+class DoctreeParseError(Exception):
+    """Raised by :func:`_doctree_diff` when docutils fails to parse
+    the input RST (internal ``KeyError``, malformed reference, etc.).
+    Callers must treat it as "cannot verify" -- ``--safe`` refuses to
+    write and tests skip rather than erroring out.
+    """
+
+
 def _doctree_diff(src, dst):
     """Return a short unified diff if the doctrees of *src* and *dst*
     differ, otherwise ``None``.
@@ -745,6 +753,9 @@ def _doctree_diff(src, dst):
     compare after stripping source-position attributes and normalizing
     whitespace inside Text nodes. docutils is imported lazily so users
     who don't opt in don't pay the import cost.
+
+    Raises :class:`DoctreeParseError` if docutils fails to parse either
+    text.
     """
     try:
         import docutils.nodes
@@ -759,13 +770,16 @@ def _doctree_diff(src, dst):
         sys.exit(2)
 
     def _norm(text):
-        tree = publish_doctree(
-            text,
-            settings_overrides={
-                "report_level": Reporter.SEVERE_LEVEL + 1,
-                "halt_level": Reporter.SEVERE_LEVEL + 1,
-            },
-        )
+        try:
+            tree = publish_doctree(
+                text,
+                settings_overrides={
+                    "report_level": Reporter.SEVERE_LEVEL + 1,
+                    "halt_level": Reporter.SEVERE_LEVEL + 1,
+                },
+            )
+        except Exception as e:
+            raise DoctreeParseError(f"{type(e).__name__}: {e}") from e
         # ``findall`` returns a generator; removing/replacing nodes
         # during iteration causes the traversal to skip siblings.
         # Materialize before mutating.
@@ -818,12 +832,21 @@ def _collect_rst_files(path):
 
 
 def _safety_check_failed(src, dst, label):
-    """Run ``--safe`` post-check; on doctree mismatch, emit stderr
-    diagnostics and return True so the caller can skip writing.
+    """Run ``--safe`` post-check; on doctree mismatch or parse error,
+    emit stderr diagnostics and return True so the caller can skip
+    writing.
     """
     if not SAFE or src == dst:
         return False
-    tree_diff = _doctree_diff(src, dst)
+    try:
+        tree_diff = _doctree_diff(src, dst)
+    except DoctreeParseError as e:
+        print(
+            f"{label}: --safe check failed; docutils could not parse"
+            f" the RST ({e}); nothing written",
+            file=sys.stderr,
+        )
+        return True
     if tree_diff is None:
         return False
     print(

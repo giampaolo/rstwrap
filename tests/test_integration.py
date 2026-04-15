@@ -25,7 +25,9 @@ import pathlib
 
 import pytest
 
+import rst_wrap_lines
 from rst_wrap_lines import WIDTH
+from rst_wrap_lines import DoctreeParseError
 from rst_wrap_lines import _doctree_diff
 from rst_wrap_lines import wrap_rst
 
@@ -137,6 +139,16 @@ class TestDocutils(BaseTest):
         out = wrap_rst(src, join=self.JOIN)
         if src == out:
             return
-        diff = _doctree_diff(src, out)
+        try:
+            diff = _doctree_diff(src, out)
+        except DoctreeParseError as e:
+            # docutils crashed on the input; we can't verify the
+            # doctree invariant. Before skipping, assert that ``--safe``
+            # refuses to write this file -- the tool must not silently
+            # overwrite content it cannot validate.
+            with pytest.raises(SystemExit) as exc_info:
+                rst_wrap_lines.main(["--safe", str(path)])
+            assert exc_info.value.code == 1
+            pytest.skip(f"docutils could not parse: {e}")
         if diff is not None:
             pytest.fail(diff)
