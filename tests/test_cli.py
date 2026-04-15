@@ -15,6 +15,14 @@ class TestCLI:
 
     # --- parse_cli ---
 
+    def test_version_flag(self, capsys):
+        # --version prints to stdout and exits with code 0.
+        with pytest.raises(SystemExit) as exc_info:
+            rst_wrap_lines.parse_cli(["--version"])
+        assert exc_info.value.code == 0
+        out = capsys.readouterr().out
+        assert rst_wrap_lines.__version__ in out
+
     def test_parse_cli_single_file(self):
         rst_wrap_lines.parse_cli([str(self.rst)])
         assert [self.rst] == rst_wrap_lines.PATHS

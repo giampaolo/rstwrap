@@ -62,10 +62,17 @@ Usage::
 
 import argparse
 import difflib
+import importlib.metadata
 import re
 import sys
 import tomllib
 from pathlib import Path
+
+try:
+    __version__ = importlib.metadata.version("rst-wrap-lines")
+except importlib.metadata.PackageNotFoundError:
+    # Running from source without install (e.g. python3 rst_wrap_lines.py).
+    __version__ = "unknown"
 
 # ---------------------------------------------------------------------------
 # CLI (module-scope constants, per project guidelines)
@@ -896,6 +903,11 @@ def parse_cli(args=None):
 
     parser = argparse.ArgumentParser(
         description="Wrap RST prose paragraphs to a max line length."
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     parser.add_argument(
         "-w",

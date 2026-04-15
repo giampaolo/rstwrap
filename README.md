@@ -57,6 +57,8 @@ Options:
   This is the integration point for editor formatters (Vim's
   `formatprg`, VS Code formatters, format-on-save plugins, etc.).
 
+- `--version` — print the version and exit
+
 ## Configuration via pyproject.toml
 
 Project-wide defaults can be set in a `[tool.rst-wrap-lines]` section of
