@@ -18,6 +18,7 @@ import argparse
 import difflib
 import importlib.metadata
 import re
+import string
 import sys
 import tomllib
 from pathlib import Path
@@ -179,9 +180,7 @@ def _wrap_paragraph(text, width, initial_indent="", subsequent_indent=""):
 # Docutils accepts any non-alphanumeric printable 7-bit ASCII
 # punctuation as a section adornment character. Matches the
 # ``nonalphanum7bit`` character class in docutils' rst parser.
-_UNDERLINE_CHARS = frozenset(
-    "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
-)
+_UNDERLINE_CHARS = frozenset(string.punctuation)
 
 # Directive with ``::`` terminator. Optional domain prefix (``py:``,
 # ``c:``, ...). Group 1 is the bare directive name (used for the
@@ -273,7 +272,7 @@ def _is_short_underline(line):
     dedicated meanings elsewhere.
     """
     s = line.rstrip()
-    if len(s) not in (1, 2) or s in {"::", "..", ":", "."}:
+    if len(s) not in {1, 2} or s in {"::", "..", ":", "."}:
         return False
     c = s[0]
     return c in _UNDERLINE_CHARS and all(ch == c for ch in s)
@@ -422,8 +421,12 @@ def _handle_list_run(lines, i, n, width, join):
         li = _match_list_item(lines[i])
         if not li or li[0] != list_indent:
             break
-        indent, bullet, rest = li
-        text_col = len(indent) + len(bullet) + 1
+        _, bullet, rest = li
+        # Preserve the source's exact spacing between bullet and text.
+        # ``*  foo`` (two spaces) has text column 3; our output must
+        # keep that column so nested content at col 2 stays parsed as
+        # a separate block rather than becoming a nested list item.
+        text_col = len(lines[i]) - len(rest)
         buf = [rest]
         j = i + 1
         while j < n:
@@ -481,7 +484,9 @@ def _handle_list_run(lines, i, n, width, join):
         ):
             emitted.extend(original)
         else:
-            initial = indent + bullet + " "
+            # Use the source's exact prefix (including its original
+            # bullet-to-text spacing) so the text column is preserved.
+            initial = lines[i][:text_col]
             subsequent = " " * text_col
             joined = " ".join(buf)
             wrapped = _wrap_paragraph(joined, width, initial, subsequent)
@@ -625,8 +630,7 @@ def wrap_rst(source, width=WIDTH, join=False):
         # underlines (e.g. ``--`` under a 2-letter title like ``CF``)
         # are accepted.
         if i + 1 < n and (
-            _is_underline(lines[i + 1])
-            or _is_short_underline(lines[i + 1])
+            _is_underline(lines[i + 1]) or _is_short_underline(lines[i + 1])
         ):
             ul = lines[i + 1].rstrip()
             if len(ul) >= len(stripped):
@@ -780,7 +784,8 @@ def _doctree_diff(src, dst):
                 },
             )
         except Exception as e:
-            raise DoctreeParseError(f"{type(e).__name__}: {e}") from e
+            msg = f"{type(e).__name__}: {e}"
+            raise DoctreeParseError(msg) from e
         # ``findall`` returns a generator; removing/replacing nodes
         # during iteration causes the traversal to skip siblings.
         # Materialize before mutating.

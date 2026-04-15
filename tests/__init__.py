@@ -102,10 +102,10 @@ class BaseTest:
             ), f"tool-produced list-item line has bare double-space: {line!r}"
 
     def assert_blank_line_count_preserved(self, src, out):
-        """Assert the number of blank lines is unchanged.
+        r"""Assert the number of blank lines is unchanged.
 
         Count lines that are empty after ``strip()``. The older proxy
-        of ``count("\\n\\n")`` misreports when the source contains
+        of ``count("\n\n")`` misreports when the source contains
         whitespace-only lines (e.g. ``"  "``) or form-feed characters
         on their own line, neither of which is a tool bug.
         """

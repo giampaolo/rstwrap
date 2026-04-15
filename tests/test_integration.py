@@ -22,6 +22,7 @@ will be picked up automatically on the next run.
 """
 
 import pathlib
+import re
 
 import pytest
 
@@ -40,6 +41,12 @@ from .conftest import PEPS_CLONE_DIR
 from .conftest import PYTEST_CLONE_DIR
 from .conftest import SPHINX_CLONE_DIR
 from .conftest import SQLALCHEMY_CLONE_DIR
+
+# Matches the bullet prefix of a list item at any indent (bullet char
+# followed by one or more spaces). Used in test_all to skip the
+# general double-space check on list-item lines -- list items may
+# legitimately have 2+ spaces between the bullet and the text.
+_LIST_ITEM_LEAD_RE = re.compile(r"^\s*([-*+]|\d+[.)]|\(\d+\))\s+")
 
 _LOCAL_RST_DIR = pathlib.Path(__file__).parent / "rst"
 
@@ -104,12 +111,18 @@ class TestCorpus(BaseTest):
 
         # 3. no prose line produced by the tool should contain a bare
         #    double-space (spaces inside inline RST constructs are
-        #    intentional and excluded from this check).
+        #    intentional and excluded from this check). List-item
+        #    lines are excluded: the bullet-to-text spacing is
+        #    preserved verbatim from the source and may be 2+ spaces
+        #    (checked separately by assert_no_double_space_in_list_items
+        #    on the text *after* the bullet marker).
         for line in out.splitlines():
             if line in src_line_set:
                 continue  # verbatim passthrough -- OK
             if line.startswith((" ", "\t", "..")):
                 continue  # indented or directive line -- skip
+            if _LIST_ITEM_LEAD_RE.match(line):
+                continue  # list item -- skip
             if has_bare_double_space(line):
                 pytest.fail(
                     f"tool-produced line has bare double-space: {line!r:.100}"
