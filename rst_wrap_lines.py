@@ -526,6 +526,19 @@ def _handle_prose(lines, i, n, width, join):
         # preceding blank) is prose continuation, not a new list item.
         buf.append(nxt)
         j += 1
+    # Indented-follow guard: if the paragraph is immediately followed
+    # (no blank line between) by an indented non-blank line, docutils
+    # parses it as ``paragraph + block_quote`` when the paragraph is
+    # multi-line, but as ``definition_list`` when it is single-line.
+    # Merging or re-wrapping to a different line count would flip that
+    # interpretation, so keep the paragraph verbatim. Triggers on
+    # malformed RST (valid RST has a blank line before indented
+    # content), but the doctree invariant must still hold.
+    indented_follow = (
+        j < n and lines[j][:1] in {" ", "\t"} and lines[j].strip()
+    )
+    if indented_follow and len(buf) > 1:
+        return buf, j
     joined = " ".join(s.strip() for s in buf)
     normalized = _collapse_spaces(joined)
     # Fidelity guard: keep verbatim only if the paragraph already fits
