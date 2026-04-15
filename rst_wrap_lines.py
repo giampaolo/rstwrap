@@ -375,6 +375,31 @@ def _handle_simple_table(lines, i, n):
     return emitted, i
 
 
+def _handle_quoted_literal_block(lines, i, n):
+    """Collect a quoted literal block verbatim.
+
+    A quoted literal block follows a paragraph ending in ``::`` (same
+    as a regular literal block), but its body is unindented: every line
+    begins with the same non-alphanumeric, non-whitespace quoting
+    character. Docutils treats the whole run as literal; we must pass
+    it through without wrapping or merging.
+    """
+    quote_char = lines[i][0]
+    emitted = []
+    while i < n and lines[i][:1] == quote_char:
+        emitted.append(lines[i])
+        i += 1
+    return emitted, i
+
+
+def _prev_nonblank_ends_with_colons(out):
+    """True if the last non-blank line in *out* ends with ``::``."""
+    for ln in reversed(out):
+        if ln.strip():
+            return ln.rstrip().endswith("::")
+    return False
+
+
 def _handle_list_run(lines, i, n, width, join):
     """Wrap a run of sibling list items at the same indent level.
 
@@ -630,6 +655,21 @@ def wrap_rst(source, width=WIDTH, join=False):
         ):
             out.append(raw)
             i += 1
+            continue
+
+        # Quoted literal block: unindented body introduced by ``::``
+        # in the previous paragraph, every line starting with the same
+        # non-alphanumeric, non-whitespace quoting character. Pass the
+        # run through verbatim -- docutils treats it as literal.
+        first = stripped[0]
+        if (
+            first.isprintable()
+            and not first.isalnum()
+            and not first.isspace()
+            and _prev_nonblank_ends_with_colons(out)
+        ):
+            emitted, i = _handle_quoted_literal_block(lines, i, n)
+            out.extend(emitted)
             continue
 
         # Plain prose paragraph.
