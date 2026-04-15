@@ -487,7 +487,12 @@ def _handle_list_run(lines, i, n, width, join):
             # Use the source's exact prefix (including its original
             # bullet-to-text spacing) so the text column is preserved.
             initial = lines[i][:text_col]
-            subsequent = " " * text_col
+            # For the subsequent indent, replace the bullet chars with
+            # spaces but keep whitespace characters (notably tabs) from
+            # the prefix. A source like ``-<TAB>text`` has text column 8
+            # after tab expansion; emitting two spaces instead would
+            # make docutils parse the continuation as a block_quote.
+            subsequent = re.sub(r"\S", " ", initial)
             joined = " ".join(buf)
             wrapped = _wrap_paragraph(joined, width, initial, subsequent)
             candidate = wrapped.split("\n")

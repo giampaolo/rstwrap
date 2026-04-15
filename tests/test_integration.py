@@ -41,8 +41,8 @@ from .conftest import CLONE_DIR
 from .conftest import LINUX_CLONE_DIR
 from .conftest import NUMPY_CLONE_DIR
 from .conftest import PEPS_CLONE_DIR
-from .conftest import SALT_CLONE_DIR
 from .conftest import PYTEST_CLONE_DIR
+from .conftest import SALT_CLONE_DIR
 from .conftest import SPHINX_CLONE_DIR
 from .conftest import SQLALCHEMY_CLONE_DIR
 
