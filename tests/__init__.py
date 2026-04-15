@@ -116,30 +116,42 @@ class BaseTest:
         ), f"blank line count changed: {src_blanks} -> {out_blanks}"
 
     def assert_hyperlink_targets_unchanged(self, src, out):
-        """Assert every hyperlink target line in src appears in out."""
-        out_lines = set(out.splitlines())
+        """Assert every hyperlink target line in src appears in out.
+
+        Compared after rstrip: the tool strips trailing whitespace, so
+        ``.. _name: url `` (with trailing space) matches ``.. _name: url``
+        in the output.
+        """
+        out_lines = {ln.rstrip() for ln in out.splitlines()}
         for line in src.splitlines():
             if _HYPERLINK_TARGET_RE.match(line):
                 assert (
-                    line in out_lines
+                    line.rstrip() in out_lines
                 ), f"hyperlink target line missing from output: {line!r}"
 
     def assert_directive_markers_preserved(self, src, out):
-        """Assert every directive marker line in src appears in out."""
-        out_lines = set(out.splitlines())
+        """Assert every directive marker line in src appears in out.
+
+        See :meth:`assert_hyperlink_targets_unchanged` for the rstrip
+        rationale.
+        """
+        out_lines = {ln.rstrip() for ln in out.splitlines()}
         for line in src.splitlines():
             if _DIRECTIVE_RE.match(line):
                 assert (
-                    line in out_lines
+                    line.rstrip() in out_lines
                 ), f"directive marker line missing from output: {line!r}"
 
     def assert_section_underlines_preserved(self, src, out):
         """Assert every section underline/overline line in src appears
         in out.
+
+        See :meth:`assert_hyperlink_targets_unchanged` for the rstrip
+        rationale.
         """
-        out_lines = set(out.splitlines())
+        out_lines = {ln.rstrip() for ln in out.splitlines()}
         for line in src.splitlines():
             if _UNDERLINE_RE.match(line):
                 assert (
-                    line in out_lines
+                    line.rstrip() in out_lines
                 ), f"section underline line missing from output: {line!r}"
