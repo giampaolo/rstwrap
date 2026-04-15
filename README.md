@@ -23,6 +23,7 @@ rst-wrap-lines --check docs/*.rst
 rst-wrap-lines --width 80 foo.rst
 rst-wrap-lines --join docs/*.rst    # also merge short consecutive lines
 rst-wrap-lines --safe docs/*.rst    # verify output with docutils
+cat foo.rst | rst-wrap-lines -      # read stdin, write to stdout
 ```
 
 Options:
@@ -49,6 +50,12 @@ Options:
   ```
   pip install 'rst-wrap-lines[safe]'
   ```
+
+- **stdin / stdout** — pass `-` instead of a file path to read RST from
+  stdin and write the formatted result to stdout. Combines with `--check`
+  (silent, exit 1 if changed) and `--diff` (writes the diff to stdout).
+  This is the integration point for editor formatters (Vim's
+  `formatprg`, VS Code formatters, format-on-save plugins, etc.).
 
 ## What gets wrapped
 

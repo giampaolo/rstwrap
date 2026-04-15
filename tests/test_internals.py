@@ -1,5 +1,7 @@
 """Tests for rst_wrap_lines.wrap_rst()."""
 
+import io
+
 import pytest
 
 import rst_wrap_lines
@@ -77,6 +79,48 @@ class TestCLI:
     def test_main_no_change_exits_0(self):
         # File already fits within 79 chars; no SystemExit expected.
         rst_wrap_lines.main(["--check", str(self.rst)])
+
+    # --- stdin / stdout ---
+
+    def test_stdin_format(self, monkeypatch, capsys):
+        # `-` reads from stdin, writes formatted output to stdout.
+        long_line = "word " * 20 + "\n"
+        monkeypatch.setattr("sys.stdin", io.StringIO(long_line))
+        rst_wrap_lines.main(["-"])
+        out = capsys.readouterr().out
+        assert out != long_line
+        for line in out.splitlines():
+            assert len(line) <= 79
+
+    def test_stdin_check_clean_exits_0(self, monkeypatch, capsys):
+        monkeypatch.setattr("sys.stdin", io.StringIO("Short.\n"))
+        rst_wrap_lines.main(["--check", "-"])
+        # Check mode is silent on stdout; exit 0 (no SystemExit).
+        assert capsys.readouterr().out == ""
+
+    def test_stdin_check_dirty_exits_1(self, monkeypatch, capsys):
+        long_line = "word " * 20 + "\n"
+        monkeypatch.setattr("sys.stdin", io.StringIO(long_line))
+        with pytest.raises(SystemExit) as exc_info:
+            rst_wrap_lines.main(["--check", "-"])
+        assert exc_info.value.code == 1
+        # No formatted output to stdout in check mode.
+        assert capsys.readouterr().out == ""
+
+    def test_stdin_diff(self, monkeypatch, capsys):
+        long_line = "word " * 20 + "\n"
+        monkeypatch.setattr("sys.stdin", io.StringIO(long_line))
+        rst_wrap_lines.main(["--diff", "-"])
+        out = capsys.readouterr().out
+        assert out.startswith("--- <stdin>")
+        assert "+++ <stdout>" in out
+
+    def test_stdin_combined_with_path_rejected(self, capsys):
+        with pytest.raises(SystemExit) as exc_info:
+            rst_wrap_lines.parse_cli(["-", str(self.rst)])
+        # argparse error → exit 2
+        assert exc_info.value.code == 2
+        assert "cannot be combined" in capsys.readouterr().err
 
 
 class TestProseParagraphs(BaseTest):

@@ -57,6 +57,7 @@ Usage::
     rst-wrap-lines --width 80 foo.rst
     rst-wrap-lines --join docs/*.rst    # also merge short lines onto one
     rst-wrap-lines --safe docs/*.rst    # verify doctree via docutils
+    cat foo.rst | rst-wrap-lines -      # read from stdin, write to stdout
 """
 
 import argparse
@@ -794,6 +795,47 @@ def _process_file(path):
     return changed, False
 
 
+def _process_stdin():
+    """Read RST from stdin, write the wrapped result to stdout.
+
+    Honours ``--check`` (no stdout output, exit 1 if changed),
+    ``--diff`` (write unified diff to stdout), and ``--safe`` (exit 1
+    on doctree mismatch, leaving stdout empty so the caller doesn't
+    accidentally apply a broken result).
+    """
+    src = sys.stdin.read()
+    dst = wrap_rst(src, WIDTH, join=JOIN)
+    changed = dst != src
+
+    if SAFE and changed:
+        tree_diff = _doctree_diff(src, dst)
+        if tree_diff is not None:
+            print(
+                "<stdin>: --safe check failed; output doctree differs"
+                " from source; nothing written",
+                file=sys.stderr,
+            )
+            print(tree_diff, file=sys.stderr)
+            return changed, True
+
+    if DIFF:
+        if changed:
+            sys.stdout.writelines(
+                difflib.unified_diff(
+                    src.splitlines(keepends=True),
+                    dst.splitlines(keepends=True),
+                    fromfile="<stdin>",
+                    tofile="<stdout>",
+                )
+            )
+        return changed, False
+    if CHECK:
+        # silent in --check mode; exit code carries the signal.
+        return changed, False
+    sys.stdout.write(dst)
+    return changed, False
+
+
 def parse_cli(args=None):
     global WIDTH, CHECK, DIFF, JOIN, SAFE, PATHS
 
@@ -838,7 +880,10 @@ def parse_cli(args=None):
         "paths",
         nargs="+",
         type=Path,
-        help="one or more .rst files or directories to format",
+        help=(
+            "one or more .rst files or directories to format;"
+            " use '-' to read from stdin and write to stdout"
+        ),
     )
     args = parser.parse_args(args)
     WIDTH = args.width
@@ -847,14 +892,27 @@ def parse_cli(args=None):
     JOIN = args.join
     SAFE = args.safe
 
+    stdin_requested = any(str(p) == "-" for p in args.paths)
+    if stdin_requested and len(args.paths) > 1:
+        parser.error("'-' (stdin) cannot be combined with other paths")
+
     collected = set()
     for path in args.paths:
-        collected.update(_collect_rst_files(path))
-    PATHS = sorted(collected)
+        if str(path) == "-":
+            collected.add(path)
+        else:
+            collected.update(_collect_rst_files(path))
+    PATHS = sorted(collected, key=str)
 
 
 def main(args=None):
     parse_cli(args)
+
+    if len(PATHS) == 1 and str(PATHS[0]) == "-":
+        changed, safety_failed = _process_stdin()
+        if safety_failed or (CHECK and changed):
+            sys.exit(1)
+        return
 
     any_changed = False
     any_safety_failed = False
