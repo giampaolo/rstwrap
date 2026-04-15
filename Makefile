@@ -29,6 +29,12 @@ test:  ## Run tests.
 test-parallel:  ## Run all tests in parallel.
 	$(MAKE) test ARGS="-n auto" $(ARGS)
 
+test-linux:  ## Run only the Linux kernel corpus integration tests.
+	$(PYTHON) -m pytest -n auto -k "linux/" tests/test_integration.py $(ARGS)
+
+test-sphinx:  ##
+	$(PYTHON) -m pytest -n auto -k "sphinx/" tests/test_integration.py $(ARGS)
+
 _ls = $(if $(FILES), printf '%s\n' $(FILES), git ls-files $(1))
 
 ruff:  ## Run ruff linter.
