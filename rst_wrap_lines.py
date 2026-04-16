@@ -766,6 +766,13 @@ def wrap_rst(source, width=WIDTH, join=True):
             i += 1
             continue
 
+        # Doctest block: consecutive ``>>>`` / ``...`` / output lines.
+        if stripped.startswith(">>> ") or stripped == ">>>":
+            while i < n and lines[i].strip():
+                out.append(lines[i])
+                i += 1
+            continue
+
         # Plain prose paragraph.
         emitted, i = _handle_prose(lines, i, n, width, join)
         out.extend(emitted)
