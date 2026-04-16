@@ -84,6 +84,23 @@ extension:
 ]
 ```
 
+### Sublime Text
+
+With the [Fmt](https://packagecontrol.io/packages/Fmt) plugin, add to
+`Preferences > Package Settings > Fmt > Settings`:
+
+```json
+{
+  "rules": [
+    {
+      "selector": "text.restructuredtext",
+      "cmd": ["rst-wrap-lines", "-"],
+      "format_on_save": true
+    }
+  ]
+}
+```
+
 ### Emacs
 
 ```elisp
