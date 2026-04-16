@@ -114,6 +114,24 @@ jobs:
       - run: rst-wrap-lines --check --diff --safe docs/
 ```
 
+## Git pre-commit
+
+Add the following to your `.pre-commit-config.yaml`:
+
+```yaml
+repos:
+  - repo: local
+    hooks:
+      - id: rst-wrap-lines
+        name: rst-wrap-lines
+        entry: rst-wrap-lines
+        language: system
+        types: [rst]
+```
+
+The hook runs in fix mode (rewrites files in place). To pass extra flags, add
+`args: [--safe, --join]`.
+
 ## Configuration via pyproject.toml
 
 Project-wide defaults can be set in a `[tool.rst-wrap-lines]` section of
