@@ -77,8 +77,19 @@ fix-all:  ## Run all fixers.
 	$(MAKE) fix-black
 	$(MAKE) fix-toml
 
+VERSION = $(shell grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+
+pre-release:  ## Check if we're ready to publish a new release.
+	@echo "Version: $(VERSION)"
+	@git tag -l "v$(VERSION)" | grep -q . && echo "FAIL: tag v$(VERSION) already exists" && exit 1 || true
+	@$(MAKE) clean
+	@$(MAKE) lint-all
+	@$(PYTHON) -m build
+	@$(PYTHON) -m twine check dist/*
+	@echo ""
+	@echo "All checks passed. Run 'make release' to publish $(VERSION)."
+
 release:  ## Tag and push a release from version in pyproject.toml.
-	$(eval VERSION := $(shell grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)"/\1/'))
 	@git diff --quiet || (echo "error: uncommitted changes" && exit 1)
 	git tag "v$(VERSION)"
 	git push origin master --tags
