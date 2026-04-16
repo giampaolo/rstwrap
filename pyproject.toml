@@ -11,9 +11,9 @@ requires-python = ">=3.11"
 license = "MIT"
 
 [project.optional-dependencies]
-lint = ["black", "ruff", "toml-sort"]
+lint = ["black", "ruff", "toml-sort", "twine"]
 safe = ["docutils"]
-test = ["docutils", "pytest", "pytest-instafail", "pytest-xdist", "twine"]
+test = ["docutils", "pytest", "pytest-instafail", "pytest-xdist"]
 
 [project.scripts]
 rst-wrap-lines = "rst_wrap_lines:main"

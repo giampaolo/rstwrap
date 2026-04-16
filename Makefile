@@ -3,6 +3,8 @@ ARGS =
 
 .DEFAULT_GOAL := help
 
+# --- install
+
 clean:  ## Remove all build/temp files.
 	@rm -rfv `find . \
 		-type d -name __pycache__ \
@@ -22,6 +24,8 @@ clean:  ## Remove all build/temp files.
 
 install:  ## Install in editable + user mode
 	$(PYTHON) -m pip install -e . --user
+
+# --- tests
 
 test:  ## Run tests.
 	$(PYTHON) -m pytest $(ARGS)
@@ -47,6 +51,8 @@ test-numpy:  ## Run only the NumPy corpus integration tests.
 test-salt:  ## Run only the Salt corpus integration tests.
 	$(PYTHON) -m pytest -n auto -k "salt/" tests/test_integration.py $(ARGS)
 
+# --- linters
+
 _ls = $(if $(FILES), printf '%s\n' $(FILES), git ls-files $(1))
 
 ruff:  ## Run ruff linter.
@@ -63,6 +69,8 @@ lint-all:  ## Run all linters.
 	$(MAKE) ruff
 	$(MAKE) lint-toml
 
+# --- fixers
+
 fix-ruff:  ## Auto-fix ruff warnings.
 	@$(call _ls,'*.py') | xargs $(PYTHON) -m ruff check --fix --output-format=concise $(ARGS)
 
@@ -77,15 +85,21 @@ fix-all:  ## Run all fixers.
 	$(MAKE) fix-black
 	$(MAKE) fix-toml
 
+# --- release
+
 VERSION = $(shell grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+
+lint-release:
+	@$(MAKE) clean
+	@$(PYTHON) -m build
+	@$(PYTHON) -m twine check dist/*
 
 pre-release:  ## Check if we're ready to publish a new release.
 	@echo "Version: $(VERSION)"
 	@git tag -l "v$(VERSION)" | grep -q . && echo "FAIL: tag v$(VERSION) already exists" && exit 1 || true
 	@$(MAKE) clean
 	@$(MAKE) lint-all
-	@$(PYTHON) -m build
-	@$(PYTHON) -m twine check dist/*
+	@$(MAKE) lint-release
 	@echo ""
 	@echo "All checks passed. Run 'make release' to publish $(VERSION)."
 
@@ -93,6 +107,8 @@ release:  ## Tag and push a release from version in pyproject.toml.
 	@git diff --quiet || (echo "error: uncommitted changes" && exit 1)
 	git tag "v$(VERSION)"
 	git push origin master --tags
+
+# --- misc
 
 help:  ## Display callable targets.
 	@awk -F':.*?## ' '/^[a-zA-Z0-9_.-]+:.*?## / {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST) | sort
