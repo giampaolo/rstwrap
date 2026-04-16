@@ -198,6 +198,21 @@ Beyond wrapping, the tool also applies these normalizations everywhere
   + hello world
   ```
 
+- **Consecutive blank lines** between top-level paragraphs are collapsed
+  into one. Blank lines inside indented content (literal blocks,
+  directive bodies, simple tables) are preserved verbatim.
+
+  ```diff
+  - Paragraph one.
+  -
+  -
+  -
+  - Paragraph two.
+  + Paragraph one.
+  +
+  + Paragraph two.
+  ```
+
 - **Trailing whitespace** is stripped from every line
 
   ```diff

@@ -714,6 +714,9 @@ def _rewrite_blocks(lines, width, join):
     later formatting passes (e.g. simple tables).
     """
     out = []
+    # Indices in ``out`` that come from simple-table blocks, whose
+    # internal blank lines (between row groups) must never be
+    # collapsed by the later ``_collapse_blank_lines`` pass.
     protected = set()
     i = 0
     n = len(lines)
@@ -806,6 +809,40 @@ def _rewrite_blocks(lines, width, join):
     return out, protected
 
 
+def _collapse_blank_lines(out, protected):
+    """Collapse consecutive blank lines into one.
+
+    Blanks are preserved inside indented blocks (literal blocks, code
+    blocks, directive bodies) and protected blocks (simple tables).
+    The rule: when a duplicate blank is encountered, peek ahead to
+    the next non-blank line. If it is indented, the blanks lead into
+    (or sit inside) indented content and must be kept; otherwise
+    collapse.
+    """
+    collapsed = []
+    for idx, ln in enumerate(out):
+        if ln.strip():
+            collapsed.append(ln)
+        else:
+            # Never collapse inside protected blocks (simple tables).
+            if idx in protected:
+                collapsed.append(ln)
+                continue
+            if collapsed and not collapsed[-1].strip():
+                # Previous output line is also blank — collapse
+                # unless the next non-blank line is indented.
+                next_indented = False
+                for k in range(idx + 1, len(out)):
+                    if out[k].strip():
+                        next_indented = out[k][:1] in {" ", "\t"}
+                        break
+                if next_indented:
+                    collapsed.append(ln)
+                continue
+            collapsed.append(ln)
+    return collapsed
+
+
 def _finalize(out, source):
     """Join output lines and restore the trailing newline if needed."""
     result = "\n".join(out)
@@ -824,7 +861,8 @@ def wrap_rst(source, width=WIDTH, join=True):
     Default False preserves the existing line breaks.
     """
     lines = _prepare_lines(source)
-    out, _protected = _rewrite_blocks(lines, width, join)
+    out, protected = _rewrite_blocks(lines, width, join)
+    out = _collapse_blank_lines(out, protected)
     return _finalize(out, source)
 
 
