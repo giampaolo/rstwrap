@@ -1,0 +1,15 @@
+# Changelog
+
+## 0.1.0 - 2026-04-16
+
+Initial release. Main features:
+
+- Wrap prose paragraphs, list items, and body of directives (`.. note::`,
+  `.. warning::`, ...) to a target line width.
+- Leave structural content (code blocks, tables, titles, comments, etc.)
+  identical.
+- `--check` / `--diff` modes for CI enforcement.
+- `--safe` mode: verify with docutils that the output's doctree is identical
+  to the input's.
+- Configurable via `[tool.rstwrap]` in `pyproject.toml`.
+- stdin/stdout mode (`rstwrap -`) for editor format-on-save integration.

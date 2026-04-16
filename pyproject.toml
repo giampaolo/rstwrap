@@ -29,6 +29,7 @@ classifiers = [
 Homepage = "https://github.com/giampaolo/rstwrap"
 Source = "https://github.com/giampaolo/rstwrap"
 Issues = "https://github.com/giampaolo/rstwrap/issues"
+Changelog = "https://github.com/giampaolo/rstwrap/blob/master/CHANGELOG.md"
 
 [project.optional-dependencies]
 lint = ["black", "build", "ruff", "toml-sort", "twine", "validate-pyproject"]
