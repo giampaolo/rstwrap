@@ -47,7 +47,12 @@ class TestProseParagraphs(BaseTest):
     def test_blank_lines_only(self):
         src = "\n\n\n"
         out = self.wrap(src)
-        assert out == src
+        assert out == "\n"
+
+    def test_multiple_blank_lines_collapsed(self):
+        src = "Paragraph 1.\n\n\n\nParagraph 2.\n"
+        out = self.wrap(src)
+        assert out == "Paragraph 1.\n\nParagraph 2.\n"
 
     def test_multiline_paragraph_joined_and_wrapped(self):
         # Three short lines that together exceed the width must be
@@ -108,6 +113,37 @@ class TestProseParagraphs(BaseTest):
         max_out = max(len(x) for x in out.splitlines())
         assert max_out <= max_src
         self.check_all(src, out)
+
+
+class TestCollapseBlankLines(BaseTest):
+    def test_simple_table_internal_blanks_preserved(self):
+        # Simple-table indices are added to ``protected`` so internal
+        # blank lines (between row groups) must survive collapse.
+        src = (
+            "======  =====\n"
+            "Col A   Col B\n"
+            "======  =====\n"
+            "row 1   val 1\n"
+            "\n"
+            "\n"
+            "row 2   val 2\n"
+            "======  =====\n"
+        )
+        out = self.wrap(src)
+        assert out == src
+
+    def test_code_block_body_blanks_preserved(self):
+        # Non-prose directive bodies are emitted verbatim. The outer
+        # forward-lookahead heuristic preserves blanks because the
+        # surrounding non-blank lines are indented.
+        src = ".. code-block:: python\n\n   x = 1\n\n\n   y = 2\n"
+        out = self.wrap(src)
+        assert out == src
+
+    def test_leading_blank_lines_collapsed(self):
+        src = "\n\n\n\nABC\n"
+        out = self.wrap(src)
+        assert out == "\nABC\n"
 
 
 class TestCRLF(BaseTest):

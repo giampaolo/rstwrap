@@ -165,7 +165,6 @@ class BaseTest:
         self.assert_trailing_newline_consistent(src, out)
         self.assert_no_trailing_whitespace_introduced(src, out)
         self.assert_no_double_space_in_list_items(src, out)
-        self.assert_blank_line_count_preserved(src, out)
         self.assert_hyperlink_targets_unchanged(src, out)
         self.assert_directive_markers_preserved(src, out)
         self.assert_section_underlines_preserved(src, out)
@@ -206,28 +205,6 @@ class BaseTest:
             assert not has_bare_double_space(
                 text
             ), f"tool-produced list-item line has bare double-space: {line!r}"
-
-    def assert_blank_line_count_preserved(self, src, out):
-        r"""Assert the number of blank lines is unchanged.
-
-        Count lines that are empty after ``strip()``. The older proxy
-        of ``count("\n\n")`` misreports when the source contains
-        whitespace-only lines (e.g. ``"  "``) or form-feed characters
-        on their own line, neither of which is a tool bug.
-        """
-        # ``rstrip`` before ``splitlines`` drops trailing whitespace and
-        # trailing blank lines from both sides, so a whitespace-only
-        # final "line" without a terminating newline (which the tool
-        # strips away) doesn't throw off the count.
-        src_blanks = sum(
-            1 for ln in src.rstrip().splitlines() if not ln.strip()
-        )
-        out_blanks = sum(
-            1 for ln in out.rstrip().splitlines() if not ln.strip()
-        )
-        assert (
-            src_blanks == out_blanks
-        ), f"blank line count changed: {src_blanks} -> {out_blanks}"
 
     def assert_hyperlink_targets_unchanged(self, src, out):
         """Assert every hyperlink target line in src appears in out.
