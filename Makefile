@@ -116,22 +116,36 @@ fix-all:  ## Run all fixers.
 
 VERSION = $(shell grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
 
-lint-release:
-	@$(MAKE) clean
-	@$(PYTHON) -m build
-	@$(PYTHON) -m twine check dist/*
+lint-release:  ## Run sanity checks against the release / tarball.
+	$(PYTHON) -m validate_pyproject -v pyproject.toml
+	$(MAKE) clean
+	$(PYTHON) -m build
+	$(PYTHON) -m twine check --strict dist/*
+	rm -rf /tmp/rstwrap-release-venv
+	$(PYTHON) -m venv /tmp/rstwrap-release-venv
+	/tmp/rstwrap-release-venv/bin/pip install --quiet dist/rstwrap-$(VERSION)-py3-none-any.whl
+	installed=$$(/tmp/rstwrap-release-venv/bin/rstwrap --version | awk '{print $$2}'); \
+		test "$$installed" = "$(VERSION)" \
+		|| (echo "FAIL: installed CLI version $$installed != $(VERSION)" && exit 1)
+	rm -rf /tmp/rstwrap-release-venv
+	@echo "Release $(VERSION) passed all checks."
 
 pre-release:  ## Check if we're ready to publish a new release.
 	@echo "Version: $(VERSION)"
-	@git tag -l "v$(VERSION)" | grep -q . && echo "FAIL: tag v$(VERSION) already exists" && exit 1 || true
-	@$(MAKE) clean
-	@$(MAKE) lint-all
-	@$(MAKE) lint-release
+	$(MAKE) clean
+	test "$$(git rev-parse --abbrev-ref HEAD)" = "master" \
+		|| (echo "FAIL: not on master branch" && exit 1)
+	git fetch origin --quiet
+	git merge-base --is-ancestor origin/master HEAD \
+		|| (echo "FAIL: origin/master has commits not in local master" && exit 1)
+	git tag -l "v$(VERSION)" | grep -q . && echo "FAIL: tag v$(VERSION) already exists" && exit 1 || true
+	$(MAKE) lint-all
+	$(MAKE) lint-release
 	@echo ""
 	@echo "All checks passed. Run 'make release' to publish $(VERSION)."
 
 release:  ## Tag and push a release from version in pyproject.toml.
-	@git diff --quiet || (echo "error: uncommitted changes" && exit 1)
+	git diff-index --quiet HEAD -- || (echo "error: uncommitted changes" && exit 1)
 	git tag "v$(VERSION)"
 	git push origin master --tags
 
