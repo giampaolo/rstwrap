@@ -82,6 +82,24 @@ class TestPassthrough(BaseTest):
         assert out == src
         self.check_all(src, out)
 
+    def test_transition_unchanged(self):
+        src = "Paragraph.\n\n----------\n\nAnother paragraph.\n"
+        out = self.wrap(src)
+        assert out == src
+        self.check_all(src, out)
+
+    def test_field_list_long_value_unchanged(self):
+        # A field list entry whose value exceeds WIDTH must not be
+        # wrapped -- the tool should not treat it as prose.
+        src = (
+            ":Author: A very long author name that goes on"
+            " and on and exceeds the target width of seventy-nine"
+            " characters easily\n"
+        )
+        out = self.wrap(src)
+        assert out == src
+        self.check_all(src, out)
+
     def test_option_list_unchanged(self):
         # Option list items must not be merged into a prose paragraph.
         src = "-f FILE  Input file.\n-o FILE  Output file.\n"
