@@ -77,5 +77,11 @@ fix-all:  ## Run all fixers.
 	$(MAKE) fix-black
 	$(MAKE) fix-toml
 
+release:  ## Tag and push a release from version in pyproject.toml.
+	$(eval VERSION := $(shell grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)"/\1/'))
+	@git diff --quiet || (echo "error: uncommitted changes" && exit 1)
+	git tag "v$(VERSION)"
+	git push origin master --tags
+
 help:  ## Display callable targets.
 	@awk -F':.*?## ' '/^[a-zA-Z0-9_.-]+:.*?## / {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST) | sort
