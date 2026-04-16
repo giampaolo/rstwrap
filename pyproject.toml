@@ -9,6 +9,26 @@ description = "Wrap prose paragraphs in reStructuredText files to a max line wid
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
+authors = [{name = "Giampaolo Rodola", email = "g.rodola@gmail.com"}]
+keywords = ["docs", "formatter", "restructuredtext", "rst", "sphinx", "wrap"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python",
+    "Topic :: Documentation",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Text Processing :: Markup :: reStructuredText",
+    "Topic :: Text Processing :: Markup",
+    "Topic :: Text Processing",
+]
+
+[project.urls]
+Homepage = "https://github.com/giampaolo/rstwrap"
+Source = "https://github.com/giampaolo/rstwrap"
+Issues = "https://github.com/giampaolo/rstwrap/issues"
 
 [project.optional-dependencies]
 lint = ["black", "build", "ruff", "toml-sort", "twine", "validate-pyproject"]
