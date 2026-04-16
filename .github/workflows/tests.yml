@@ -19,3 +19,7 @@ jobs:
       run: |
         pip install .[test]
         make test-parallel
+    - name: Run linters
+      run: |
+        make lint-all
+        make pre-release

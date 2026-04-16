@@ -13,7 +13,7 @@ license = "MIT"
 [project.optional-dependencies]
 lint = ["black", "ruff", "toml-sort"]
 safe = ["docutils"]
-test = ["docutils", "pytest", "pytest-instafail", "pytest-xdist"]
+test = ["docutils", "pytest", "pytest-instafail", "pytest-xdist", "twine"]
 
 [project.scripts]
 rst-wrap-lines = "rst_wrap_lines:main"
