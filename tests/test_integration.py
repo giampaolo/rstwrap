@@ -37,6 +37,7 @@ from rst_wrap_lines import _doctree_diff
 from rst_wrap_lines import _parse_rst
 from rst_wrap_lines import wrap_rst
 
+from . import _UNDERLINE_RE
 from . import BaseTest
 from . import has_bare_double_space
 from .conftest import ANSIBLE_CLONE_DIR
@@ -161,6 +162,35 @@ class TestCorpus(BaseTest):
                     f"tool-produced line has bare double-space: {line!r:.100}"
                 )
 
+    def assert_only_prose_changed(self, src, out):
+        """Every non-prose source line survives in the output.
+
+        If a source line (after rstrip) is missing from the output
+        it must be a prose or list-item line that got reflowed.
+        Blank lines, indented content, explicit markup, and section
+        underlines must never disappear.
+        """
+        out_line_set = {ln.rstrip() for ln in out.splitlines()}
+        for line in src.splitlines():
+            s = line.rstrip()
+            if s in out_line_set:
+                continue
+            # Line is missing from output -- only OK for prose /
+            # list items that the tool legitimately reflowed.
+            if not s:
+                pytest.fail("blank line removed from output")
+            if s[0] in {" ", "\t"}:
+                # Indented lines may change inside prose-body
+                # directives (.. note::, etc.), so we can't flag
+                # these universally.
+                continue
+            if s.startswith(".."):
+                pytest.fail(f"explicit markup line changed: {s!r:.80}")
+            if _UNDERLINE_RE.match(s):
+                pytest.fail(f"section underline changed: {s!r:.80}")
+            # Column-0, non-structural: prose or list item.
+            # Legitimately reflowed -- OK.
+
     @pytest.mark.parametrize("path", _RST_FILE_PARAMS)
     def test_all(self, path):
         src = path.read_text(encoding="utf-8")
@@ -174,6 +204,7 @@ class TestCorpus(BaseTest):
         self.assert_cross_mode_stable(out)
         self.assert_no_line_exceeds_width(src_line_set, out)
         self.assert_no_double_space_in_prose(src_line_set, out)
+        self.assert_only_prose_changed(src, out)
         self.check_all(src, out)
 
 
