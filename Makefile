@@ -3,7 +3,9 @@ ARGS =
 
 .DEFAULT_GOAL := help
 
-# --- install
+# =====================================================================
+# Install
+# =====================================================================
 
 clean:  ## Remove all build/temp files.
 	@rm -rfv `find . \
@@ -25,7 +27,9 @@ clean:  ## Remove all build/temp files.
 install:  ## Install in editable + user mode
 	$(PYTHON) -m pip install -e . --user
 
-# --- tests
+# =====================================================================
+# Tests
+# =====================================================================
 
 test:  ## Run tests.
 	$(PYTHON) -m pytest $(ARGS)
@@ -33,25 +37,41 @@ test:  ## Run tests.
 test-parallel:  ## Run all tests in parallel.
 	$(MAKE) test ARGS="-n auto" $(ARGS)
 
-test-linux:  ## Run only the Linux kernel corpus integration tests.
-	$(PYTHON) -m pytest -n auto -k "linux/" tests/test_integration.py $(ARGS)
+test-regressions:  ## Run only the local regression fixture tests.
+	$(PYTHON) -m pytest -k "local/" tests/test_integration.py $(ARGS)
 
-test-sphinx:  ##
-	$(PYTHON) -m pytest -n auto -k "sphinx/" tests/test_integration.py $(ARGS)
+# --- corpus integration tests
 
-test-peps:  ## Run only the Python PEPs corpus integration tests.
+test-cpython:
+	$(PYTHON) -m pytest -n auto -k "cpython/" tests/test_integration.py $(ARGS)
+
+test-peps:
 	$(PYTHON) -m pytest -n auto -k "peps/" tests/test_integration.py $(ARGS)
 
-test-ansible:  ## Run only the Ansible corpus integration tests.
+test-sphinx:
+	$(PYTHON) -m pytest -n auto -k "sphinx/" tests/test_integration.py $(ARGS)
+
+test-linux:
+	$(PYTHON) -m pytest -n auto -k "linux/" tests/test_integration.py $(ARGS)
+
+test-sqlalchemy:
+	$(PYTHON) -m pytest -n auto -k "sqlalchemy/" tests/test_integration.py $(ARGS)
+
+test-pytest:
+	$(PYTHON) -m pytest -n auto -k "pytest/" tests/test_integration.py $(ARGS)
+
+test-ansible:
 	$(PYTHON) -m pytest -n auto -k "ansible/" tests/test_integration.py $(ARGS)
 
-test-numpy:  ## Run only the NumPy corpus integration tests.
+test-numpy:
 	$(PYTHON) -m pytest -n auto -k "numpy/" tests/test_integration.py $(ARGS)
 
-test-salt:  ## Run only the Salt corpus integration tests.
+test-salt:
 	$(PYTHON) -m pytest -n auto -k "salt/" tests/test_integration.py $(ARGS)
 
-# --- linters
+# =====================================================================
+# Linters
+# =====================================================================
 
 _ls = $(if $(FILES), printf '%s\n' $(FILES), git ls-files $(1))
 
@@ -69,7 +89,9 @@ lint-all:  ## Run all linters.
 	$(MAKE) ruff
 	$(MAKE) lint-toml
 
-# --- fixers
+# =====================================================================
+# Fixers
+# =====================================================================
 
 fix-ruff:  ## Auto-fix ruff warnings.
 	@$(call _ls,'*.py') | xargs $(PYTHON) -m ruff check --fix --output-format=concise $(ARGS)
@@ -85,7 +107,9 @@ fix-all:  ## Run all fixers.
 	$(MAKE) fix-black
 	$(MAKE) fix-toml
 
-# --- release
+# =====================================================================
+# Release
+# =====================================================================
 
 VERSION = $(shell grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
 
