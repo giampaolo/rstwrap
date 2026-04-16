@@ -1,6 +1,6 @@
 """Tests for prose-paragraph wrapping behaviour."""
 
-from rst_wrap_lines import wrap_rst
+from rstwrap import wrap_rst
 
 from . import BaseTest
 

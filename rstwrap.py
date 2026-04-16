@@ -4,14 +4,14 @@
 
 Example usages:
 
-    rst-wrap-lines docs/*.rst
-    rst-wrap-lines docs/                # recurse into a directory
-    rst-wrap-lines --check docs/*.rst
-    rst-wrap-lines --diff docs/*.rst    # print unified diff, don't write
-    rst-wrap-lines --width 80 foo.rst
-    rst-wrap-lines --join docs/*.rst    # also merge short lines onto one
-    rst-wrap-lines --safe docs/*.rst    # verify doctree via docutils
-    cat foo.rst | rst-wrap-lines -      # read from stdin, write to stdout
+    rstwrap docs/*.rst
+    rstwrap docs/                # recurse into a directory
+    rstwrap --check docs/*.rst
+    rstwrap --diff docs/*.rst    # print unified diff, don't write
+    rstwrap --width 80 foo.rst
+    rstwrap --join docs/*.rst    # also merge short lines onto one
+    rstwrap --safe docs/*.rst    # verify doctree via docutils
+    cat foo.rst | rstwrap -      # read from stdin, write to stdout
 """
 
 import argparse
@@ -24,9 +24,9 @@ import tomllib
 from pathlib import Path
 
 try:
-    __version__ = importlib.metadata.version("rst-wrap-lines")
+    __version__ = importlib.metadata.version("rstwrap")
 except importlib.metadata.PackageNotFoundError:
-    # Running from source without install (e.g. python3 rst_wrap_lines.py).
+    # Running from source without install (e.g. python3 rstwrap.py).
     __version__ = "unknown"
 
 # ---------------------------------------------------------------------------
@@ -853,7 +853,7 @@ def _parse_rst(text):
     except ImportError:
         print(
             "--safe requires docutils; install with:"
-            "  pip install rst-wrap-lines[safe]",
+            "  pip install rstwrap[safe]",
             file=sys.stderr,
         )
         sys.exit(2)
@@ -1039,7 +1039,7 @@ def _process_stdin():
     return changed, False
 
 
-# Options that ``[tool.rst-wrap-lines]`` in pyproject.toml may set,
+# Options that ``[tool.rstwrap]`` in pyproject.toml may set,
 # mapped to the type each value must have. ``check`` and ``diff`` are
 # intentionally CLI-only -- they're per-invocation flags, not project
 # policy.
@@ -1067,7 +1067,7 @@ def _config_error(msg):
 
 
 def _load_pyproject_config():
-    """Return validated options from ``[tool.rst-wrap-lines]`` in the
+    """Return validated options from ``[tool.rstwrap]`` in the
     nearest pyproject.toml, or an empty dict if none is found.
 
     Unknown keys and wrong-typed values are fatal: print an error to
@@ -1082,25 +1082,25 @@ def _load_pyproject_config():
             data = tomllib.load(f)
     except (OSError, tomllib.TOMLDecodeError) as e:
         return _config_error(f"cannot read {path}: {e}")
-    section = data.get("tool", {}).get("rst-wrap-lines", {})
+    section = data.get("tool", {}).get("rstwrap", {})
     valid = {}
     for k, v in section.items():
         expected = _VALID_PYPROJECT_KEYS.get(k)
         if expected is None:
             valid_keys = ", ".join(sorted(_VALID_PYPROJECT_KEYS))
             return _config_error(
-                f"unknown key in [tool.rst-wrap-lines] in {path}: {k!r}"
+                f"unknown key in [tool.rstwrap] in {path}: {k!r}"
                 f" (valid keys: {valid_keys})"
             )
         # bool is a subclass of int -- reject True/False for width.
         if expected is int and (isinstance(v, bool) or not isinstance(v, int)):
             return _config_error(
-                f"[tool.rst-wrap-lines].{k} in {path} must be an integer,"
+                f"[tool.rstwrap].{k} in {path} must be an integer,"
                 f" got {type(v).__name__}"
             )
         if expected is bool and not isinstance(v, bool):
             return _config_error(
-                f"[tool.rst-wrap-lines].{k} in {path} must be a boolean,"
+                f"[tool.rstwrap].{k} in {path} must be a boolean,"
                 f" got {type(v).__name__}"
             )
         valid[k] = v
@@ -1179,7 +1179,7 @@ def parse_cli(args=None):
             " use '-' to read from stdin and write to stdout"
         ),
     )
-    # Apply [tool.rst-wrap-lines] from pyproject.toml as defaults; the
+    # Apply [tool.rstwrap] from pyproject.toml as defaults; the
     # CLI then overrides anything explicitly passed.
     config = _load_pyproject_config()
     if config:

@@ -1,15 +1,15 @@
 import pathlib
 import subprocess
 
-CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-cpython")
-SPHINX_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-sphinx")
-SQLALCHEMY_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-sqlalchemy")
-PYTEST_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-pytest")
-LINUX_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-linux")
-PEPS_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-peps")
-ANSIBLE_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-ansible")
-NUMPY_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-numpy")
-SALT_CLONE_DIR = pathlib.Path("/tmp/rst-wrap-lines-salt")
+CLONE_DIR = pathlib.Path("/tmp/rstwrap-cpython")
+SPHINX_CLONE_DIR = pathlib.Path("/tmp/rstwrap-sphinx")
+SQLALCHEMY_CLONE_DIR = pathlib.Path("/tmp/rstwrap-sqlalchemy")
+PYTEST_CLONE_DIR = pathlib.Path("/tmp/rstwrap-pytest")
+LINUX_CLONE_DIR = pathlib.Path("/tmp/rstwrap-linux")
+PEPS_CLONE_DIR = pathlib.Path("/tmp/rstwrap-peps")
+ANSIBLE_CLONE_DIR = pathlib.Path("/tmp/rstwrap-ansible")
+NUMPY_CLONE_DIR = pathlib.Path("/tmp/rstwrap-numpy")
+SALT_CLONE_DIR = pathlib.Path("/tmp/rstwrap-salt")
 
 _REPOS = [
     {

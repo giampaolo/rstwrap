@@ -29,13 +29,13 @@ import re
 import docutils.nodes
 import pytest
 
-import rst_wrap_lines
-from rst_wrap_lines import _DIRECTIVE_RE as _TOOL_DIRECTIVE_RE
-from rst_wrap_lines import WIDTH
-from rst_wrap_lines import DoctreeParseError
-from rst_wrap_lines import _doctree_diff
-from rst_wrap_lines import _parse_rst
-from rst_wrap_lines import wrap_rst
+import rstwrap
+from rstwrap import _DIRECTIVE_RE as _TOOL_DIRECTIVE_RE
+from rstwrap import WIDTH
+from rstwrap import DoctreeParseError
+from rstwrap import _doctree_diff
+from rstwrap import _parse_rst
+from rstwrap import wrap_rst
 
 from . import _UNDERLINE_RE
 from . import BaseTest
@@ -380,7 +380,7 @@ class TestDocutils(BaseTest):
             out_tree = _parse_rst(out)
         except DoctreeParseError as e:
             with pytest.raises(SystemExit) as exc_info:
-                rst_wrap_lines.main(["--safe", str(path)])
+                rstwrap.main(["--safe", str(path)])
             assert exc_info.value.code == 1
             return pytest.skip(f"docutils could not parse: {e}")
 

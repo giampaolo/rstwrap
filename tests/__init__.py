@@ -2,9 +2,9 @@
 
 import re
 
-from rst_wrap_lines import _DIRECTIVE_RE as _TOOL_DIRECTIVE_RE
-from rst_wrap_lines import _PROSE_BODY_DIRECTIVES
-from rst_wrap_lines import wrap_rst
+from rstwrap import _DIRECTIVE_RE as _TOOL_DIRECTIVE_RE
+from rstwrap import _PROSE_BODY_DIRECTIVES
+from rstwrap import wrap_rst
 
 # Matches inline RST constructs that may legitimately contain multiple
 # spaces (inline literals, roles, hyperlinks, emphasis, bold). Used to

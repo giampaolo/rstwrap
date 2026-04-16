@@ -1,6 +1,6 @@
 """Tests for the opt-in ``join=True`` short-line merge mode."""
 
-import rst_wrap_lines
+import rstwrap
 
 from . import BaseTest
 
@@ -60,5 +60,5 @@ class TestJoin(BaseTest):
 
     def test_join_on_by_default(self):
         src = "foo\nbar\nzoo\n"
-        out = rst_wrap_lines.wrap_rst(src)
+        out = rstwrap.wrap_rst(src)
         assert out == "foo bar zoo\n"

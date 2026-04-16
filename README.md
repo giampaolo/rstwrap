@@ -1,4 +1,4 @@
-# rst-wrap-lines
+# rstwrap
 
 A command-line tool to wrap prose paragraphs in reStructuredText (.rst)
 files to a maximum line width.
@@ -23,7 +23,7 @@ Primary workflows:
 ## Installation
 
 ```
-pip install rst-wrap-lines
+pip install rstwrap
 ```
 
 ## Usage
@@ -31,13 +31,13 @@ pip install rst-wrap-lines
 Examples:
 
 ```bash
-rst-wrap-lines docs/*.rst
-rst-wrap-lines docs/                # whole dir, recursive
-rst-wrap-lines --check docs/*.rst
-rst-wrap-lines --width 120 foo.rst
-rst-wrap-lines --no-join docs/*.rst  # only wrap over-width lines
-rst-wrap-lines --safe docs/*.rst    # verify output with docutils
-cat foo.rst | rst-wrap-lines -      # read stdin, write to stdout
+rstwrap docs/*.rst
+rstwrap docs/                # whole dir, recursive
+rstwrap --check docs/*.rst
+rstwrap --width 120 foo.rst
+rstwrap --no-join docs/*.rst  # only wrap over-width lines
+rstwrap --safe docs/*.rst    # verify output with docutils
+cat foo.rst | rstwrap -      # read stdin, write to stdout
 ```
 
 Options:
@@ -52,7 +52,7 @@ Options:
 - `--safe`: after wrapping, parse both the input and the output with
   [docutils](https://docutils.sourceforge.io/), and skip any file whose
   document tree would change (printing a diff to stderr, exit code 1). Requires
-  `pip install 'rst-wrap-lines[safe]'`.
+  `pip install 'rstwrap[safe]'`.
 - `-q`, `--quiet`: suppress informational output.
 - `--version`: print the version and exit
 
@@ -67,7 +67,7 @@ through a shell command, and format `.rst` files on save.
 Add to `~/.vimrc`:
 
 ```vim
-autocmd BufWritePre *.rst silent! %!rst-wrap-lines -
+autocmd BufWritePre *.rst silent! %!rstwrap -
 ```
 
 ### VS Code
@@ -78,7 +78,7 @@ extension:
 ```json
 "customLocalFormatters.formatters": [
   {
-    "command": "rst-wrap-lines -",
+    "command": "rstwrap -",
     "languages": ["restructuredtext"]
   }
 ]
@@ -94,7 +94,7 @@ With the [Fmt](https://packagecontrol.io/packages/Fmt) plugin, add to
   "rules": [
     {
       "selector": "text.restructuredtext",
-      "cmd": ["rst-wrap-lines", "-"],
+      "cmd": ["rstwrap", "-"],
       "format_on_save": true
     }
   ]
@@ -104,22 +104,22 @@ With the [Fmt](https://packagecontrol.io/packages/Fmt) plugin, add to
 ### Emacs
 
 ```elisp
-(defun rst-wrap-lines-buffer ()
+(defun rstwrap-buffer ()
   (interactive)
   (let ((p (point)))
     (shell-command-on-region (point-min) (point-max)
-                             "rst-wrap-lines -" nil t)
+                             "rstwrap -" nil t)
     (goto-char p)))
 ```
 
 ## GitHub Actions
 
-Drop the following workflow into `.github/workflows/rst-wrap-lines.yml` to fail
+Drop the following workflow into `.github/workflows/rstwrap.yml` to fail
 CI on any `.rst` file that isn't already wrapped. Adjust `docs/` to wherever
 your `.rst` files live.
 
 ```yaml
-name: rst-wrap-lines
+name: rstwrap
 on: [push, pull_request]
 jobs:
   check:
@@ -129,18 +129,18 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
-      - run: pip install 'rst-wrap-lines[safe]'
-      - run: rst-wrap-lines --check --diff --safe docs/
+      - run: pip install 'rstwrap[safe]'
+      - run: rstwrap --check --diff --safe docs/
 ```
 
 ## Configuration via pyproject.toml
 
-Project-wide defaults can be set in a `[tool.rst-wrap-lines]` section of
+Project-wide defaults can be set in a `[tool.rstwrap]` section of
 `pyproject.toml`. The tool walks up from the current working directory
 to find the nearest one. Supported keys:
 
 ```toml
-[tool.rst-wrap-lines]
+[tool.rstwrap]
 width = 120    # default: 79
 join = false   # default: true
 safe = true    # default: false
