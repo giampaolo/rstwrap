@@ -26,7 +26,10 @@ will be picked up automatically on the next run.
 import pathlib
 import re
 
+import docutils.nodes
 import pytest
+from docutils.core import publish_doctree
+from docutils.utils import Reporter
 
 import rst_wrap_lines
 from rst_wrap_lines import WIDTH
@@ -140,9 +143,6 @@ class TestCorpus(BaseTest):
 
 def parse_doctree(text):
     """Parse *text* with docutils, return the tree or ``None``."""
-    from docutils.core import publish_doctree
-    from docutils.utils import Reporter
-
     try:
         return publish_doctree(
             text,
@@ -161,7 +161,6 @@ def code_blocks_from_tree(tree):
     Returns a set of strings (lines rstripped). Excludes
     unknown-directive fallbacks (text starting with ``..``).
     """
-    import docutils.nodes
 
     blocks = set()
     node_types = (
