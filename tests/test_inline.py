@@ -58,3 +58,32 @@ class TestInlineMarkup(BaseTest):
         out = self.wrap(src)
         assert "[1]_" in out
         self.check_all(src, out)
+
+    def test_long_hyperlink_at_width_boundary(self):
+        # A hyperlink token that can't be split is forced to straddle
+        # the width boundary. The token must survive intact -- the
+        # tool must never break it across lines.
+        long_link = (
+            "`documentation <https://example.com/very/long/path"
+            "/that/exceeds/the/target/width>`_"
+        )
+        src = (
+            "This paragraph forces the long link to the edge: "
+            + long_link
+            + "\n"
+        )
+        out = self.wrap(src)
+        assert long_link in out
+        self.check_all(src, out)
+
+    def test_backslash_escape_at_width_boundary(self):
+        # A backslash escape sitting right at the wrap boundary
+        # must not confuse the wrapping logic.
+        src = (
+            "This paragraph has filler words to push the"
+            " backslash escape near column seventy-nine"
+            r" chars\ here." + "\n"
+        )
+        out = self.wrap(src)
+        assert r"chars\ here." in out or r"\ here." in out
+        self.check_all(src, out)

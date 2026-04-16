@@ -79,6 +79,20 @@ class TestProseParagraphs(BaseTest):
         assert "::\n" in out
         self.check_all(src, out)
 
+    def test_single_letter_word_before_double_colon(self):
+        # A single-letter word followed by :: near the wrap boundary.
+        # The :: must not be separated from the preceding text.
+        src = (
+            "This paragraph has filler text to push a single-letter"
+            " word near the wrap boundary, ending with x::\n"
+            "\n"
+            "    literal block\n"
+        )
+        out = self.wrap(src)
+        assert "x::" in out
+        assert "    literal block" in out
+        self.check_all(src, out)
+
     def test_double_space_with_long_hyperlink_not_lengthened(self):
         # A paragraph with a double-space (which triggers rewrap) that also
         # contains a hyperlink whose display text was split across lines.
