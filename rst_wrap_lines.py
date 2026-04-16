@@ -37,7 +37,7 @@ WIDTH = 79
 CHECK = False
 COLOR = False
 DIFF = False
-JOIN = False
+JOIN = True
 SAFE = False
 QUIET = False
 PATHS = set()
@@ -609,7 +609,7 @@ def _handle_prose(lines, i, n, width, join):
 # ---------------------------------------------------------------------------
 
 
-def wrap_rst(source, width=WIDTH, join=False):
+def wrap_rst(source, width=WIDTH, join=True):
     """Wrap prose paragraphs to *width* and remove double spaces.
 
     With *join* True, short consecutive lines inside a prose paragraph
@@ -1073,10 +1073,10 @@ def parse_cli(args=None):
     parser.add_argument(
         "--join",
         action=argparse.BooleanOptionalAction,
-        default=False,
+        default=True,
         help=(
             "merge short consecutive lines inside a paragraph onto one"
-            " line, up to the target width"
+            " line, up to the target width (default: on)"
         ),
     )
     parser.add_argument(

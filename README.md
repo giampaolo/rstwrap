@@ -35,7 +35,7 @@ rst-wrap-lines docs/*.rst
 rst-wrap-lines docs/                # whole dir, recursive
 rst-wrap-lines --check docs/*.rst
 rst-wrap-lines --width 120 foo.rst
-rst-wrap-lines --join docs/*.rst    # also merge short consecutive lines
+rst-wrap-lines --no-join docs/*.rst  # only wrap over-width lines
 rst-wrap-lines --safe docs/*.rst    # verify output with docutils
 cat foo.rst | rst-wrap-lines -      # read stdin, write to stdout
 ```
@@ -46,8 +46,9 @@ Options:
 - `--diff`: print a unified diff instead of writing files
 - `--color`: colorize diff output (`auto`, `always`, `never`; default: `auto`)
 - `--check`: exit with code 1 if any file would be changed; don't write
-- `--join`: also merge short consecutive lines within a paragraph into one
-  (up to the target width).
+- `--join` / `--no-join`: merge short consecutive lines within a paragraph into
+  one line, up to the target width (default: on). Use `--no-join` to only wrap
+  over-width lines.
 - `--safe`: after wrapping, parse both the input and the output with
   [docutils](https://docutils.sourceforge.io/), and skip any file whose
   document tree would change (printing a diff to stderr, exit code 1). Requires
@@ -141,9 +142,9 @@ to find the nearest one. Supported keys:
 
 ```toml
 [tool.rst-wrap-lines]
-width = 79
-join = true
-safe = true
+width = 120    # default: 79
+join = false   # default: true
+safe = true    # default: false
 ```
 
 Command-line flags **override** anything set in `pyproject.toml`. To turn
@@ -161,9 +162,9 @@ configurable in pyproject.toml — they're run modes, not project policy.
   even when the paragraph already fits within the target width
 - Trailing whitespace is stripped from every line.
 
-With `--join`, short consecutive lines inside a paragraph are merged onto one
-line (up to the target width). Without the flag, existing line breaks within
-prose are preserved and only over-width lines get wrapped.
+Short consecutive lines inside a paragraph are merged onto one line (up to the
+target width). With `--no-join`, existing line breaks within prose are preserved
+and only over-width lines get wrapped.
 
 ## What is left untouched
 

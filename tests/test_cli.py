@@ -116,6 +116,18 @@ class TestDiff(_CLITestBase):
         assert rst_wrap_lines.DIFF is True
 
 
+class TestJoin(_CLITestBase):
+    """``--join`` / ``--no-join``."""
+
+    def test_join_is_default(self):
+        rst_wrap_lines.parse_cli([str(self.rst)])
+        assert rst_wrap_lines.JOIN is True
+
+    def test_no_join_flag(self):
+        rst_wrap_lines.parse_cli(["--no-join", str(self.rst)])
+        assert rst_wrap_lines.JOIN is False
+
+
 class TestColor(_CLITestBase):
     """``--color``."""
 
@@ -329,7 +341,7 @@ class TestPyprojectConfig:
         # /tmp itself has no pyproject.toml so we get plain defaults.
         rst_wrap_lines.parse_cli([str(self.rst)])
         assert rst_wrap_lines.WIDTH == 79
-        assert rst_wrap_lines.JOIN is False
+        assert rst_wrap_lines.JOIN is True
         assert rst_wrap_lines.SAFE is False
 
     def test_pyproject_sets_width(self):

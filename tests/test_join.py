@@ -58,9 +58,7 @@ class TestJoin(BaseTest):
         out = self.wrap(src)
         assert out == "* foo bar zoo\n"
 
-    def test_join_off_by_default(self):
-        # With the default BaseTest.JOIN=False, short lines must stay
-        # as-is (no merging).
+    def test_join_on_by_default(self):
         src = "foo\nbar\nzoo\n"
         out = rst_wrap_lines.wrap_rst(src)
-        assert out == src
+        assert out == "foo bar zoo\n"
