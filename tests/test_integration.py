@@ -28,13 +28,12 @@ import re
 
 import docutils.nodes
 import pytest
-from docutils.core import publish_doctree
-from docutils.utils import Reporter
 
 import rst_wrap_lines
 from rst_wrap_lines import WIDTH
 from rst_wrap_lines import DoctreeParseError
 from rst_wrap_lines import _doctree_diff
+from rst_wrap_lines import _parse_rst
 from rst_wrap_lines import wrap_rst
 
 from . import BaseTest
@@ -141,17 +140,6 @@ class TestCorpus(BaseTest):
         self.check_all(src, out)
 
 
-def parse_doctree(text):
-    """Parse *text* with docutils, return the tree or ``None``."""
-    return publish_doctree(
-        text,
-        settings_overrides={
-            "report_level": Reporter.SEVERE_LEVEL + 1,
-            "halt_level": Reporter.SEVERE_LEVEL + 1,
-        },
-    )
-
-
 def code_blocks_from_tree(tree):
     """Extract code block text from a docutils tree.
 
@@ -194,25 +182,23 @@ class TestDocutils(BaseTest):
         if src == out:
             return
         try:
-            diff = _doctree_diff(src, out)
+            src_tree = _parse_rst(src)
+            out_tree = _parse_rst(out)
         except DoctreeParseError as e:
             with pytest.raises(SystemExit) as exc_info:
                 rst_wrap_lines.main(["--safe", str(path)])
             assert exc_info.value.code == 1
-            pytest.skip(f"docutils could not parse: {e}")
-        if diff is not None:
-            pytest.fail(diff)
+            return pytest.skip(f"docutils could not parse: {e}")
 
-        src_tree = parse_doctree(src)
-        if src_tree is None:
-            return pytest.skip(f"docutils can't parse {src}")
-        out_tree = parse_doctree(out)
-        if out_tree is None:
-            raise pytest.fail(f"failed to parse {src}")
-
+        # Code block preservation (before _norm mutates copies).
         src_blocks = code_blocks_from_tree(src_tree)
         out_blocks = code_blocks_from_tree(out_tree)
         for block in src_blocks:
             assert (
                 block in out_blocks
             ), f"code block changed or missing in output:\n{block}"
+
+        # Doctree structural diff.
+        diff = _doctree_diff(src, out, src_tree=src_tree, dst_tree=out_tree)
+        if diff is not None:
+            return pytest.fail(diff)

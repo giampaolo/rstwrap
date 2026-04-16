@@ -798,20 +798,13 @@ class DoctreeParseError(Exception):
     """
 
 
-def _doctree_diff(src, dst):
-    """Return a short unified diff if the doctrees of *src* and *dst*
-    differ, otherwise ``None``.
+def _parse_rst(text):
+    """Parse *text* with docutils and return the document tree.
 
-    Used by the ``--safe`` post-check: parse both texts with docutils,
-    compare after stripping source-position attributes and normalizing
-    whitespace inside Text nodes. docutils is imported lazily so users
-    who don't opt in don't pay the import cost.
-
-    Raises :class:`DoctreeParseError` if docutils fails to parse either
-    text.
+    Raises `DoctreeParseError` if docutils fails.
     """
     try:
-        import docutils.nodes
+        import docutils  # noqa: F401
         from docutils.core import publish_doctree
         from docutils.utils import Reporter
     except ImportError:
@@ -821,19 +814,41 @@ def _doctree_diff(src, dst):
             file=sys.stderr,
         )
         sys.exit(2)
+    try:
+        return publish_doctree(
+            text,
+            settings_overrides={
+                "report_level": Reporter.SEVERE_LEVEL + 1,
+                "halt_level": Reporter.SEVERE_LEVEL + 1,
+            },
+        )
+    except Exception as e:
+        msg = f"{type(e).__name__}: {e}"
+        raise DoctreeParseError(msg) from e
 
-    def _norm(text):
-        try:
-            tree = publish_doctree(
-                text,
-                settings_overrides={
-                    "report_level": Reporter.SEVERE_LEVEL + 1,
-                    "halt_level": Reporter.SEVERE_LEVEL + 1,
-                },
-            )
-        except Exception as e:
-            msg = f"{type(e).__name__}: {e}"
-            raise DoctreeParseError(msg) from e
+
+def _doctree_diff(src, dst, src_tree=None, dst_tree=None):
+    """Return a short unified diff if the doctrees of *src* and *dst*
+    differ, otherwise ``None``.
+
+    Pre-parsed trees can be passed via *src_tree* / *dst_tree* to avoid
+    redundant parsing. The trees are deep-copied before normalization,
+    so the caller's originals are not mutated.
+
+    Used by the ``--safe`` post-check. Raises `DoctreeParseError` if
+    docutils fails to parse either text.
+    """
+    import copy
+
+    import docutils.nodes
+
+    if src_tree is None:
+        src_tree = _parse_rst(src)
+    if dst_tree is None:
+        dst_tree = _parse_rst(dst)
+
+    def _norm(tree):
+        tree = copy.deepcopy(tree)
         # ``findall`` returns a generator; removing/replacing nodes
         # during iteration causes the traversal to skip siblings.
         # Materialize before mutating.
@@ -848,8 +863,8 @@ def _doctree_diff(src, dst):
             node.parent.replace(node, docutils.nodes.Text(normalized))
         return tree.pformat()
 
-    s1 = _norm(src)
-    s2 = _norm(dst)
+    s1 = _norm(src_tree)
+    s2 = _norm(dst_tree)
     if s1 == s2:
         return None
     return "\n".join(
