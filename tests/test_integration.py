@@ -138,6 +138,44 @@ class TestCorpus(BaseTest):
         self.check_all(src, out)
 
 
+def extract_doctree_code_blocks(text):
+    """Parse *text* with docutils and return code block contents.
+
+    Returns a set of strings, one per ``literal_block`` or
+    ``doctest_block`` node, with lines rstripped.  Nodes whose text
+    starts with ``..`` are excluded (unknown-directive fallbacks that
+    docutils misclassifies as literal blocks).
+
+    Returns ``None`` if docutils cannot parse the text.
+    """
+    import docutils.nodes
+    from docutils.core import publish_doctree
+    from docutils.utils import Reporter
+
+    try:
+        tree = publish_doctree(
+            text,
+            settings_overrides={
+                "report_level": Reporter.SEVERE_LEVEL + 1,
+                "halt_level": Reporter.SEVERE_LEVEL + 1,
+            },
+        )
+    except (KeyError, TypeError, AttributeError, ValueError):
+        return None
+    blocks = set()
+    node_types = (
+        docutils.nodes.literal_block,
+        docutils.nodes.doctest_block,
+    )
+    for node in tree.findall(lambda n: isinstance(n, node_types)):
+        text = node.astext()
+        if text.lstrip().startswith(".."):
+            continue
+        normalized = "\n".join(ln.rstrip() for ln in text.splitlines())
+        blocks.add(normalized)
+    return blocks
+
+
 class TestDocutils(BaseTest):
     """Verify that wrap_rst() does not alter the docutils document tree.
 
@@ -171,3 +209,24 @@ class TestDocutils(BaseTest):
             pytest.skip(f"docutils could not parse: {e}")
         if diff is not None:
             pytest.fail(diff)
+
+    @pytest.mark.parametrize("path", _RST_FILE_PARAMS)
+    def test_code_blocks_unchanged(self, path):
+        """Parse source and output with docutils and verify every
+        code block (literal_block, doctest_block) is byte-identical
+        after rstripping lines.
+        """
+        src = path.read_text(encoding="utf-8")
+        out = wrap_rst(src, join=self.JOIN)
+        if src == out:
+            return
+        src_blocks = extract_doctree_code_blocks(src)
+        if src_blocks is None:
+            pytest.skip("docutils could not parse source")
+        out_blocks = extract_doctree_code_blocks(out)
+        if out_blocks is None:
+            pytest.skip("docutils could not parse output")
+        for block in src_blocks:
+            assert (
+                block in out_blocks
+            ), f"code block changed or missing in output:\n{block}"
