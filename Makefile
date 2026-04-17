@@ -25,7 +25,17 @@ clean:  ## Remove all build/temp files.
 		htmlcov/
 
 install:  ## Install in editable + user mode
+	$(PYTHON) -m pip uninstall -y rstwrap 2>/dev/null || true
 	$(PYTHON) -m pip install -e . --user
+	$(MAKE) _check-editable
+
+_check-editable:  ## Assert installed rstwrap resolves inside this repo.
+	@$(PYTHON) -c "import rstwrap, pathlib; \
+		here = pathlib.Path('$(CURDIR)').resolve(); \
+		mod = pathlib.Path(rstwrap.__file__).resolve(); \
+		ok = here in mod.parents; \
+		print('editable OK:' if ok else 'STALE INSTALLATION:', mod); \
+		raise SystemExit(0 if ok else 1)"
 
 # =====================================================================
 # Tests
