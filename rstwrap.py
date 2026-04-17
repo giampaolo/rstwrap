@@ -520,9 +520,10 @@ def _handle_list_run(lines, i, n, width, join):
             joined = " ".join(buf)
             wrapped = _wrap_paragraph(joined, width, initial, subsequent)
             candidate = wrapped.split("\n")
-            # No-lengthen: if wrapping still produces an over-width
-            # line (unsplittable token like a long hyperlink), verbatim.
-            if any(len(ln) > width for ln in candidate):
+            # No-lengthen: accept the wrap as long as no output line
+            # is longer than ``width`` or the longest source line.
+            bound = max(width, *(len(ln) for ln in original))
+            if max(len(ln) for ln in candidate) > bound:
                 emitted.extend(original)
             else:
                 emitted.extend(candidate)
@@ -582,9 +583,10 @@ def _handle_prose(lines, i, n, width, join):
         return buf, j
     wrapped = _wrap_paragraph(normalized, width, "", "")
     candidate = wrapped.split("\n")
-    # No-lengthen: if an unsplittable token leaves an over-width line,
-    # keep the original verbatim.
-    if any(len(ln) > width for ln in candidate):
+    # No-lengthen: accept the wrap as long as no output line is
+    # longer than ``width`` or the longest source line.
+    bound = max(width, *(len(ln) for ln in buf))
+    if max(len(ln) for ln in candidate) > bound:
         return buf, j
     return candidate, j
 

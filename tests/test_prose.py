@@ -113,6 +113,30 @@ class TestProseParagraphs(BaseTest):
         assert max_out <= max_src
         self.check_all(src, out)
 
+    def test_over_width_source_line_still_wrapped(self):
+        # A single source line wider than WIDTH with an unsplittable
+        # token in the middle: the tool wraps around the token, leaves
+        # the token line over-width, and every other line fits WIDTH.
+        src = (
+            "This paragraph has plenty of wrappable prose around a"
+            " very long inline hyperlink"
+            " `label <https://example.com/"
+            + ("x" * 120)
+            + ">`_ and then continues with more plain words that"
+            " should be wrapped normally.\n"
+        )
+        out = self.wrap(src)
+        assert out != src  # did wrap (not verbatim passthrough)
+        max_src = max(len(x) for x in src.splitlines())
+        max_out = max(len(x) for x in out.splitlines())
+        assert max_out <= max_src
+        # Non-token lines all fit the target width.
+        for line in out.splitlines():
+            if "https://example.com" in line:
+                continue
+            assert len(line) <= self.WIDTH
+        self.check_all(src, out)
+
 
 class TestCollapseBlankLines(BaseTest):
     def test_simple_table_internal_blanks_preserved(self):

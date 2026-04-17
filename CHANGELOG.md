@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2 (in development)
+
+- IMPORTANT: Wrap paragraphs and list items even when they contain an
+  unsplittable token (e.g. a long inline hyperlink). The token may sit on
+  its own over-width line, but no output line exceeds the longest source
+  line.
+
 ## 0.1.1 - 2026-04-17
 
 - IMPORTANT: Collapse multiple consecutive blank lines between paragraphs into

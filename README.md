@@ -262,8 +262,9 @@ For every file the suite verifies:
 
 - **Idempotency**: running the tool twice produces the same output as
   running it once.
-- **Width**: no tool-produced line exceeds the target width (verbatim
-  passthrough of already-long source lines is allowed).
+- **Width**: no tool-produced line exceeds the target width, except when
+  a paragraph contains an unsplittable token (e.g. a long inline
+  hyperlink).
 - **No double spaces**: no tool-produced prose line contains a bare
   double space.
 - **Document tree invariant**: parsing the original and the wrapped file with

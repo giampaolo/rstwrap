@@ -140,12 +140,17 @@ class TestCorpus(BaseTest):
             wrap_rst(out, join=False) == out
         ), "join=True output is not stable under join=False"
 
-    def assert_no_line_exceeds_width(self, src_line_set, out):
-        """No tool-produced line exceeds WIDTH."""
+    def assert_no_line_exceeds_width(self, src, src_line_set, out):
+        """No tool-produced line exceeds WIDTH, unless a source line
+        was already at least that long (unsplittable atomic token).
+        """
+        max_src = max((len(ln) for ln in src.splitlines()), default=0)
         for line in out.splitlines():
             if line in src_line_set:
                 continue  # verbatim passthrough -- OK
             if len(line) > WIDTH:
+                if len(line) <= max_src:
+                    continue  # no longer than the longest source line
                 pytest.fail(
                     "tool-produced line exceeds width"
                     f" ({len(line)} > {WIDTH}): {line!r:.80}"
@@ -202,7 +207,7 @@ class TestCorpus(BaseTest):
 
         assert wrap_rst(out, join=self.JOIN) == out, "not idempotent"
         self.assert_cross_mode_stable(out)
-        self.assert_no_line_exceeds_width(src_line_set, out)
+        self.assert_no_line_exceeds_width(src, src_line_set, out)
         self.assert_no_double_space_in_prose(src_line_set, out)
         self.assert_only_prose_changed(src, out)
         self.check_all(src, out)

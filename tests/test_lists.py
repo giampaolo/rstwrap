@@ -198,3 +198,25 @@ class TestListItems(BaseTest):
         max_out = max(len(x) for x in out.splitlines())
         assert max_out <= max_src
         self.check_all(src, out)
+
+    def test_bullet_with_over_width_unsplittable_token_wrapped(self):
+        # Single-line bullet wider than WIDTH with an unsplittable
+        # token in the middle: the tool wraps around the token, leaves
+        # the token line over-width, and every other line fits WIDTH.
+        src = (
+            "* I care about psutil code being fully compliant so I"
+            " added a `make install-git-hooks <https://example.com/"
+            + ("x" * 120)
+            + ")>`__ hook and then lots more words that should be"
+            " wrapped at the target width just fine.\n"
+        )
+        out = self.wrap(src)
+        assert out != src  # did wrap (not verbatim passthrough)
+        max_src = max(len(x) for x in src.splitlines())
+        max_out = max(len(x) for x in out.splitlines())
+        assert max_out <= max_src
+        for line in out.splitlines():
+            if "https://example.com" in line:
+                continue
+            assert len(line) <= self.WIDTH
+        self.check_all(src, out)
