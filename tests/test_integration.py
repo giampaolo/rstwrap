@@ -1,7 +1,13 @@
 """Tests run against .rst files from multiple sources.
 
 Currently includes:
-- Local regression fixtures (tests/rst/, always present)
+- Local fixtures (tests/rst/, always present), split into:
+  * tests/rst/regressions/ — inputs whose bug trips at least one
+    of this file's assertions on its own.
+  * tests/rst/examples/ — inputs whose bug parses to the same
+    doctree as the buggy output (so the integration assertions
+    silently accept it); the real catch lives in a paired unit
+    test, this fixture just keeps the input exercised.
 - CPython documentation (Doc/, ~600 files)
 - Sphinx documentation (doc/, ~100 files)
 - SQLAlchemy documentation (doc/build/)
@@ -19,8 +25,10 @@ The external repos are cloned once (sparse) into temp directories and
 reused across runs. Cloning is triggered in conftest.py during
 collection setup, **before** pytest-xdist spawns worker processes.
 
-Adding a regression test: drop a .rst file into tests/rst/ and it
-will be picked up automatically on the next run.
+Adding a regression test: drop a .rst file into
+tests/rst/regressions/ (or tests/rst/examples/ if it's documented
+under "examples" above) and it will be picked up automatically on
+the next run.
 """
 
 import pathlib
@@ -107,10 +115,13 @@ _SOURCES = [
 ]
 
 # Build (path, id_string) pairs so that files with the same name from
-# different repos get distinct parametrize ids (e.g. "cpython/index.rst"
-# vs "sphinx/index.rst").
+# different repos get distinct parametrize ids (e.g.
+# "cpython/library/os.rst" vs "sphinx/index.rst"). The id includes
+# the path *relative* to the source root so subdirs are visible —
+# this matters for local fixtures, where the regressions/ vs
+# examples/ split should be filterable via ``-k local/regressions/``.
 _RST_FILE_PARAMS = [
-    pytest.param(path, id=f"{label}/{path.name}")
+    pytest.param(path, id=f"{label}/{path.relative_to(doc_dir).as_posix()}")
     for doc_dir, label in _SOURCES
     for path in sorted(doc_dir.rglob("*.rst"))
 ]

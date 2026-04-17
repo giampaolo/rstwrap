@@ -38,7 +38,10 @@ test-parallel:  ## Run all tests in parallel.
 	$(PYTHON) -m pytest -p xdist -n auto --dist loadgroup $(ARGS)
 
 test-regressions:  ## Run only the local regression fixture tests.
-	$(PYTHON) -m pytest -k "local/" tests/test_integration.py $(ARGS)
+	$(PYTHON) -m pytest -k "local/regressions/" tests/test_integration.py $(ARGS)
+
+test-examples:  ## Run only the local example fixture tests.
+	$(PYTHON) -m pytest -k "local/examples/" tests/test_integration.py $(ARGS)
 
 test-docutils:
 	$(PYTHON) -m pytest -k "TestDocutils" $(ARGS)
