@@ -1,5 +1,11 @@
 # rstwrap
 
+[![Tests](https://img.shields.io/github/actions/workflow/status/giampaolo/rstwrap/tests.yml?label=tests)](https://github.com/giampaolo/rstwrap/actions/workflows/tests.yml)
+[![PyPI version](https://img.shields.io/pypi/v/rstwrap.svg)](https://pypi.org/project/rstwrap/)
+[![Python versions](https://img.shields.io/badge/python-3.9+-blue.svg)](https://pypi.org/project/rstwrap/)
+[![Status](https://img.shields.io/pypi/status/rstwrap.svg)](https://pypi.org/project/rstwrap/)
+[![License](https://img.shields.io/pypi/l/rstwrap.svg)](https://github.com/giampaolo/rstwrap/blob/master/LICENSE)
+
 A command-line tool to wrap prose paragraphs in reStructuredText (.rst)
 files to a maximum line width.
 
