@@ -163,7 +163,7 @@ class TestListItems(BaseTest):
         # Regression: a nested bullet with no blank line above was
         # slurped into the parent, producing ``- Parent. - Nested.``
         # on one line under ``join=True``. See the paired fixture
-        # ``examples/nested_bullet_not_merged_into_parent.rst``.
+        # ``examples/list_nested_bullet_not_merged_into_parent.rst``.
         src = "- Parent line short.\n  - Nested item.\n"
         out = self.wrap(src)
         assert out == src

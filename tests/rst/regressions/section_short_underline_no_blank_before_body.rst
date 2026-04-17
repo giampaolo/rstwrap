@@ -2,7 +2,7 @@
     Regression: ``CF\n--\nbody`` (short title, 2-char underline, no
     blank before body) -- the title-underline dispatch required
     3+ char underlines, so ``--`` merged into the body paragraph.
-    Pairs with ``short_section_underline.rst`` (blank-line case).
+    Pairs with ``section_short_underline.rst`` (blank-line case).
     Found in Linux ``kbuild/kbuild.rst``.
 
 CROSS_COMPILE is also used for ccache in some setups.
