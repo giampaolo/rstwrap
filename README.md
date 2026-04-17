@@ -272,6 +272,34 @@ For every file the suite verifies:
   prose never alters headings, directives, code blocks, hyperlinks, or any
   other structural element.
 
+## Comparison with other tools
+
+[docstrfmt](https://github.com/LilSpazJoekp/docstrfmt),
+[rstfmt](https://github.com/dzhu/rstfmt), and
+[rstformat](https://github.com/vscode-restructuredtext/vscode-restructuredtext)
+(the engine behind the VS Code RST extension) are opinionated formatters,
+closer in spirit to [Black](https://github.com/psf/black). They parse RST into
+a `docutils` AST, and re-emit it in a canonical shape. That produces
+consistent output for a single project, but every construct in the file gets
+rewritten, so the diff against an existing doc tree is very large. Coverage is
+also a caveat: `rstfmt` README notes that not all reST constructs are handled,
+and uncovered constructs can be emitted incorrectly.
+
+`rstwrap` takes the opposite approach. It only wraps prose paragraphs, and
+leaves every other line identical. **The document structure is preserved**:
+section titles, tables, code blocks, hyperlink targets, comments, and
+everything else remains identical. A clean file produces no changes in terms of
+rendered HTML, and the doctree is guaranteed to parse identically (enforced by
+the test suite and by `--safe`). Also, `docutils` is an optional extra, not a hard
+dependency.
+
+Rough rule of thumb:
+
+- To apply a uniform style to a small project you own, or if you start from
+  scratch, use `docstrfmt`.
+- To wrap `.rst` files in a large existing doc tree without a massive diff,
+  or to run as a CI check on third party docs, use `rstwrap`.
+
 ## License
 
 MIT
