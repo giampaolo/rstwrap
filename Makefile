@@ -146,6 +146,8 @@ pre-release:  ## Check if we're ready to publish a new release.
 	status=$$(curl -s -o /dev/null -w "%{http_code}" https://pypi.org/pypi/rstwrap/$(VERSION)/json); \
 		test "$$status" = "404" \
 		|| (echo "FAIL: version $(VERSION) already exists on PyPI (HTTP $$status)" && exit 1)
+	grep -q "^## $(VERSION) " CHANGELOG.md \
+		|| (echo "FAIL: version $(VERSION) not mentioned in CHANGELOG.md" && exit 1)
 	$(MAKE) lint-all
 	$(MAKE) lint-release
 	@echo ""

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 - 2026-04-17
 
 - IMPORTANT: Collapse multiple consecutive blank lines between paragraphs into
   one.
