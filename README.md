@@ -278,28 +278,22 @@ For every file the suite verifies:
 [docstrfmt](https://github.com/LilSpazJoekp/docstrfmt),
 [rstfmt](https://github.com/dzhu/rstfmt), and
 [rstformat](https://github.com/vscode-restructuredtext/vscode-restructuredtext)
-(the engine behind the VS Code RST extension) are opinionated formatters,
-closer in spirit to [Black](https://github.com/psf/black). They parse RST into
-a `docutils` AST, and re-emit it in a canonical shape. That produces
-consistent output for a single project, but every construct in the file gets
-rewritten, so the diff against an existing doc tree is very large. Coverage is
-also a caveat: `rstfmt` README notes that not all reST constructs are handled,
-and uncovered constructs can be emitted incorrectly.
+(the engine behind the VS Code RST extension) are opinionated formatters
+in the spirit of [Black](https://github.com/psf/black): they parse RST
+into a `docutils` document tree and re-emit it in a canonical shape.
 
-`rstwrap` takes the opposite approach. It only wraps prose paragraphs, and
-leaves every other line identical. **The document structure is preserved**:
-section titles, tables, code blocks, hyperlink targets, comments, and
-everything else remains identical. A clean file produces no changes in terms of
-rendered HTML, and the doctree is guaranteed to parse identically (enforced by
-the test suite and by `--safe`). Also, `docutils` is an optional extra, not a hard
-dependency.
+The `docutils` tree discards source-level style (underline character,
+bullet marker, indent width, blank-line counts), so the emitter has to
+pick one style and rewrite every construct to match it.
 
-Rough rule of thumb:
+`rstwrap` works directly on source lines and only ever rewrites prose.
+Section titles, tables, code blocks, bullets, underlines, and blank-line
+layout are preserved verbatim; the doctree is guaranteed to parse the
+same (enforced by the test suite and by `--safe`). `docutils` is an
+optional extra when using `--check`.
 
-- To apply a uniform style to a small project you own, or if you start from
-  scratch, use `docstrfmt`.
-- To wrap `.rst` files in a large existing doc tree without a massive diff,
-  or to run as a CI check on third party docs, use `rstwrap`.
+Rule of thumb: use `docstrfmt` for a uniform style. Use `rstwrap` to enforce
+line width while leaving every other stylistic choice alone.
 
 ## License
 
