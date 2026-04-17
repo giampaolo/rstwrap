@@ -160,28 +160,19 @@ class TestListItems(BaseTest):
         self.check_all(src, out)
 
     def test_nested_bullet_not_merged_into_parent(self):
-        # Regression: when a parent bullet item is immediately
-        # followed (no blank line) by a nested bullet at a deeper
-        # indent, ``_handle_list_run`` slurped the nested line into
-        # the parent's continuation buffer, producing
-        # ``- Parent. - Nested.`` on a single line and visibly
-        # destroying the bullet structure. The source is malformed
-        # RST (a nested list needs a blank line above), but docutils
-        # parses it leniently and the tool must not make the output
-        # worse than the input. Triggers under ``join=True`` (the
-        # CLI default), where multi-line items get re-flowed.
+        # Regression: a nested bullet with no blank line above was
+        # slurped into the parent, producing ``- Parent. - Nested.``
+        # on one line under ``join=True``. See the paired fixture
+        # ``examples/nested_bullet_not_merged_into_parent.rst``.
         src = "- Parent line short.\n  - Nested item.\n"
         out = self.wrap(src)
         assert out == src
 
     def test_nested_list_after_blank_wrapped(self):
-        # Regression: a proper nested bullet list (parent + blank
-        # line + indented children) had over-width children passed
-        # through verbatim because the dispatch's indented-line
-        # passthrough caught them before the list-item branch saw
-        # them. Docutils parses this shape as a nested <bullet_list>
-        # inside the parent <list_item>, so wrapping the children
-        # at their own text column preserves the doctree.
+        # Regression: over-width children of a nested bullet list
+        # (parent + blank + indented children) were passed verbatim
+        # because the indented-line passthrough caught them before
+        # the list-item branch.
         src = (
             "- Split docs into multiple sections:\n"
             "\n"
@@ -197,10 +188,9 @@ class TestListItems(BaseTest):
         self.check_all(src, out)
 
     def test_bullet_with_long_hyperlink_continuation_not_lengthened(self):
-        # A bullet whose continuation contains a long hyperlink that was
-        # manually split across lines. Joining produces an un-splittable
-        # token; the tool must not produce a line longer than the longest
-        # original line.
+        # Bullet continuation with a manually-split long hyperlink
+        # -> unsplittable token after join. Output must not exceed
+        # the longest original line.
         src = (
             "- See the `prebuilt versions are\n"
             "  available <https://docs.python.org/dev/download.html>`_."

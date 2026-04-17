@@ -165,10 +165,8 @@ def _collapse_spaces(text):
 
 
 def _wrap_paragraph(text, width, initial_indent="", subsequent_indent=""):
-    """Wrap a single-paragraph *text* to *width* chars.
-
-    Inline RST constructs that contain whitespace are masked first so
-    they survive the whitespace-based split intact.
+    """Wrap *text* to *width* chars, keeping inline RST constructs
+    (masked during the whitespace split) intact.
     """
     masked, placeholders = _protect_inline(text)
     words = masked.split()
@@ -207,9 +205,8 @@ _UNDERLINE_CHARS = frozenset(string.punctuation)
 # (see docs/internal/rst_rules.md).
 _DIRECTIVE_RE = re.compile(r"^\.\.\s+(?:[\w-]+:)?([\w-]+)::(?=\s|$)")
 
-# Directives whose body is prose (and therefore wrappable). Anything
-# not in this set is treated as opaque -- we don't know its content
-# model, so we pass the body through verbatim.
+# Directives whose body is prose (and therefore wrappable).
+# Everything else is opaque; pass the body through verbatim.
 _PROSE_BODY_DIRECTIVES = frozenset({
     # Python/Sphinx domain object descriptions
     "class",
@@ -330,11 +327,9 @@ def _leading_ws(line):
 
 
 def _handle_directive(lines, i, n, width, join):
-    """Emit directive marker + body.
-
-    Prose-body directives (class, method, note, ...) have their body
-    recursively wrapped at the body's own indent. Everything else is
-    passed through verbatim.
+    """Emit directive marker + body. Prose-body directives (note,
+    class, method, ...) have their body recursively wrapped at its
+    own indent; everything else passes through verbatim.
     """
     raw = lines[i]
     m = _DIRECTIVE_RE.match(raw)
@@ -536,11 +531,7 @@ def _handle_list_run(lines, i, n, width, join):
 
 
 def _handle_prose(lines, i, n, width, join):
-    """Accumulate and wrap a plain prose paragraph.
-
-    Stops at blank lines, indented lines, explicit markup, table rows,
-    underlines, field lists, and standalone '::' markers.
-    """
+    """Accumulate and wrap a plain prose paragraph."""
     buf = [lines[i]]
     j = i + 1
     while j < n:
@@ -561,12 +552,12 @@ def _handle_prose(lines, i, n, width, join):
             break
         if _OPTION_LIST_RE.match(nxt):
             break
-        # A standalone '::' introduces a literal block and must stay on
-        # its own line -- merging it turns '::' into ':' in the output.
+        # A standalone '::' introduces a literal block; merging it
+        # into the prose would turn '::' into ':'.
         if nxt.strip() == "::":
             break
-        # A bullet-shaped line inside a paragraph (no preceding
-        # blank) is prose continuation, not a new list item.
+        # Bullet-shaped lines with no preceding blank are prose
+        # continuation, not new list items.
         buf.append(nxt)
         j += 1
     # Indented-follow guard: an indented non-blank line with no blank
@@ -632,7 +623,7 @@ def _try_verbatim(raw, stripped, lines, i, n):
         return [raw], i + 1
 
     # Anonymous hyperlink target ``__ URL`` -- joining into prose
-    # would garble the target definition.
+    # would garble it.
     if stripped.startswith("__ "):
         return [raw], i + 1
 
@@ -649,8 +640,7 @@ def _try_verbatim(raw, stripped, lines, i, n):
     if _is_underline(raw):
         return [raw], i + 1
 
-    # Bare 2-char underline alone on its line (e.g. ``==`` overline
-    # preceding ``rv``). Without this it would merge into prose.
+    # Bare 2-char underline (e.g. ``==`` overline above ``rv``).
     if _is_short_underline(raw):
         return [raw], i + 1
 
@@ -670,11 +660,8 @@ def _try_verbatim(raw, stripped, lines, i, n):
 
 
 def _rewrite_blocks(lines, width, join):
-    """Core dispatch loop. Walk *lines*, classify each block, and
-    either pass it through verbatim or delegate to a ``_handle_*``
-    function. Returns ``(out, protected)`` where *protected* is the
-    set of ``out`` indices in simple-table blocks (never mutated by
-    later passes).
+    """Core dispatch loop. Returns ``(out, protected)`` where
+    *protected* marks simple-table indices (never mutated later).
     """
     out = []
     protected = set()
@@ -849,8 +836,7 @@ class DoctreeParseError(Exception):
 
 def _parse_rst(text):
     """Parse *text* with docutils and return the document tree.
-
-    Raises `DoctreeParseError` if docutils fails.
+    Raises `DoctreeParseError` on failure.
     """
     try:
         import docutils  # noqa: F401
@@ -967,9 +953,7 @@ def _safety_check_failed(src, dst, label):
 
 
 def _process(src, *, label, diff_dst_label, write_fn, log_changes):
-    """Shared core for file and stdin processing.
-    Returns (changed, safety_failed).
-    """
+    """Shared core for file and stdin. Returns (changed, safety_failed)."""
     dst = wrap_rst(src, WIDTH, join=JOIN)
     changed = dst != src
     if _safety_check_failed(src, dst, label):
@@ -1054,7 +1038,7 @@ def _find_pyproject_toml():
 
 
 def _config_error(msg):
-    """Print *msg* to stderr and exit with code 2 (config error)."""
+    """Print *msg* to stderr and exit with code 2."""
     print(f"error: {msg}", file=sys.stderr)
     sys.exit(2)
 

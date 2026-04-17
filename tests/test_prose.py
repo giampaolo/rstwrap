@@ -99,10 +99,9 @@ class TestProseParagraphs(BaseTest):
         self.check_all(src, out)
 
     def test_double_space_with_long_hyperlink_not_lengthened(self):
-        # A paragraph with a double-space (which triggers rewrap) that also
-        # contains a hyperlink whose display text was split across lines.
-        # Joining produces an un-splittable token >79 chars; the tool must
-        # not produce an output line longer than the longest input line.
+        # Paragraph with a double-space (triggers rewrap) + a hyperlink
+        # split across lines -> unsplittable token >79 chars. Output
+        # must not exceed the longest input line.
         src = (
             "See the `prebuilt versions are\n"
             "available <https://docs.python.org/dev/download.html>`_."

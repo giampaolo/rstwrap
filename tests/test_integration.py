@@ -58,19 +58,15 @@ from .conftest import SALT_CLONE_DIR
 from .conftest import SPHINX_CLONE_DIR
 from .conftest import SQLALCHEMY_CLONE_DIR
 
-# Matches the bullet prefix of a list item at any indent (bullet char
-# followed by one or more spaces). Used in test_all to skip the
-# general double-space check on list-item lines -- list items may
-# legitimately have 2+ spaces between the bullet and the text.
+# Bullet prefix of a list item at any indent. Used to skip the
+# double-space check on list items -- ``*  foo`` (text-aligned
+# with a neighbor) is legitimate.
 LIST_ITEM_LEAD_RE = re.compile(r"^\s*([-*+]|\d+[.)]|\(\d+\)|#\.)\s+")
 
-# Directives whose body is code or verbatim content that must pass
-# through unchanged.  Used to identify *real* code blocks among the
-# literal_block nodes that docutils produces for unknown directives
-# (without Sphinx every unknown directive body becomes a literal
-# block).  Anything NOT in this set is assumed to be prose, metadata,
-# or structural content — safe to skip when verifying code-block
-# preservation.
+# Directives whose body is code / verbatim. Used to distinguish
+# real code blocks from the literal_block nodes docutils creates
+# for unknown directives (without Sphinx, every unknown directive
+# body parses as literal_block).
 CODE_BODY_DIRECTIVES = frozenset({
     # Standard code display
     "code-block",
@@ -114,12 +110,10 @@ _SOURCES = [
     (SALT_CLONE_DIR / "doc", "salt"),
 ]
 
-# Build (path, id_string) pairs so that files with the same name from
-# different repos get distinct parametrize ids (e.g.
-# "cpython/library/os.rst" vs "sphinx/index.rst"). The id includes
-# the path *relative* to the source root so subdirs are visible —
-# this matters for local fixtures, where the regressions/ vs
-# examples/ split should be filterable via ``-k local/regressions/``.
+# (path, id) pairs so same-named files from different repos get
+# distinct parametrize ids (``cpython/library/os.rst`` vs
+# ``sphinx/index.rst``). The id keeps the relative subpath so
+# ``-k local/regressions/`` can filter local fixtures.
 _RST_FILE_PARAMS = [
     pytest.param(path, id=f"{label}/{path.relative_to(doc_dir).as_posix()}")
     for doc_dir, label in _SOURCES
@@ -132,12 +126,10 @@ RST_FILES = [p.values[0] for p in _RST_FILE_PARAMS]
 
 
 class TestCorpus(BaseTest):
-    """Run wrap_rst() against every collected .rst file and verify
-    basic invariants: idempotency, no tool-produced line exceeds the
-    target width, no bare double-space in tool-produced prose.
-
-    The integration corpus runs with ``join=True`` so the short-line
-    merge path is exercised against every upstream project's docs.
+    """Run wrap_rst() against every collected .rst file. Checks
+    idempotency, line-width, no double-space in prose, and that
+    non-prose lines are preserved. Runs with ``join=True`` so the
+    merge path is exercised on every upstream project.
     """
 
     JOIN = True
@@ -174,12 +166,9 @@ class TestCorpus(BaseTest):
                 )
 
     def assert_only_prose_changed(self, src, out):
-        """Every non-prose source line survives in the output.
-
-        If a source line (after rstrip) is missing from the output
-        it must be a prose or list-item line that got reflowed.
-        Blank lines, indented content, explicit markup, and section
-        underlines must never disappear.
+        """Every non-prose source line survives in the output. Only
+        prose / list items may legitimately differ (got reflowed);
+        blanks, indents, explicit markup, and underlines must not.
         """
         out_line_set = {ln.rstrip() for ln in out.splitlines()}
         for line in src.splitlines():

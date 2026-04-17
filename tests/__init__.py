@@ -27,10 +27,9 @@ _LIST_ITEM_RE = re.compile(r"^(\s*)([-*+]|\d+[.)]|#\.)\s+")
 # Matches directive marker lines: .. foo:: or .. domain:foo::
 _DIRECTIVE_RE = re.compile(r"^\s*\.\. \w[\w:+.-]*::")
 
-# Matches section underline/overline lines (2+ repeated punctuation chars).
-# Minimum 3 chars: docutils requires >=3 for a section underline. A bare
-# ``--`` on its own line is parsed as plain prose text, not as an
-# underline, so the fidelity guard must not demand it appear verbatim.
+# Section under/overline: 3+ repeated punctuation chars. Docutils
+# requires >=3; a bare ``--`` parses as prose, so the fidelity guard
+# must not demand it appear verbatim.
 _UNDERLINE_RE = re.compile(r"^([=\-~^#*+\']{3,})\s*$")
 
 
@@ -58,19 +57,10 @@ def collect_indented_body(lines, i, n, min_indent):
 
 
 def extract_code_blocks(text):
-    """Extract code block content from RST text.
-
-    Returns a list of block strings (lines rstripped, since the tool
-    strips trailing whitespace). Identifies three kinds of code
-    blocks:
-
-    1. ``::`` literal blocks — indented content after a line ending
-       with ``::`` (not a directive marker). Content must be indented
-       more than the ``::`` line.
-    2. Non-prose directive bodies — ``.. code-block::``,
-       ``.. highlight::``, etc. (anything not in
-       ``_PROSE_BODY_DIRECTIVES``).
-    3. Doctest blocks — runs of ``>>>`` / ``...`` lines.
+    """Return code-block contents from *text* (rstripped lines):
+    ``::`` literal blocks, non-prose directive bodies
+    (``.. code-block::``, ``.. highlight::``, ...), and doctest
+    blocks (``>>>`` / ``...``).
     """
     lines = text.splitlines()
     n = len(lines)
@@ -187,9 +177,7 @@ class BaseTest:
             ), f"tool-produced line has trailing whitespace: {line!r}"
 
     def assert_no_double_space_in_list_items(self, src, out):
-        """Assert no tool-produced list-item line contains bare double
-        spaces.
-        """
+        """Assert no tool-produced list item has a bare double space."""
         # The tool strips trailing whitespace, so verbatim-passthrough
         # matches must be done against rstrip'd source lines.
         src_line_set = {ln.rstrip() for ln in src.splitlines()}
@@ -207,11 +195,9 @@ class BaseTest:
             ), f"tool-produced list-item line has bare double-space: {line!r}"
 
     def assert_hyperlink_targets_unchanged(self, src, out):
-        """Assert every hyperlink target line in src appears in out.
-
-        Compared after rstrip: the tool strips trailing whitespace, so
-        ``.. _name: url `` (with trailing space) matches ``.. _name: url``
-        in the output.
+        """Assert every hyperlink target in src appears in out.
+        Compared after rstrip so ``.. _name: url `` (trailing space)
+        matches ``.. _name: url``.
         """
         out_lines = {ln.rstrip() for ln in out.splitlines()}
         for line in src.splitlines():
@@ -221,8 +207,7 @@ class BaseTest:
                 ), f"hyperlink target line missing from output: {line!r}"
 
     def assert_directive_markers_preserved(self, src, out):
-        """Assert every directive marker line in src appears in out.
-
+        """Assert every directive marker in src appears in out.
         See :meth:`assert_hyperlink_targets_unchanged` for the rstrip
         rationale.
         """
@@ -234,9 +219,7 @@ class BaseTest:
                 ), f"directive marker line missing from output: {line!r}"
 
     def assert_section_underlines_preserved(self, src, out):
-        """Assert every section underline/overline line in src appears
-        in out.
-
+        """Assert every section under/overline in src appears in out.
         See :meth:`assert_hyperlink_targets_unchanged` for the rstrip
         rationale.
         """
@@ -248,11 +231,8 @@ class BaseTest:
                 ), f"section underline line missing from output: {line!r}"
 
     def assert_code_blocks_unchanged(self, src, out):
-        """Assert code block content is unchanged.
-
-        Covers ``::`` literal blocks, non-prose directive bodies,
-        and doctest blocks. Compares after rstrip per line (the
-        tool strips trailing whitespace).
+        """Assert code block content is unchanged (``::`` literal
+        blocks, non-prose directive bodies, doctest blocks).
         """
         src_blocks = extract_code_blocks(src)
         out_blocks = extract_code_blocks(out)
