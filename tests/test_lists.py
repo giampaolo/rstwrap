@@ -131,14 +131,17 @@ class TestListItems(BaseTest):
 
     def test_bullet_extra_spacing_preserved(self):
         # Extra spaces between bullet marker and text (3+ spaces)
-        # must be preserved -- the tool should not normalize them.
+        # must be preserved -- the tool should not normalize them
+        # to a single space, and the continuation must stay aligned
+        # to the text column.
         src = (
             "-   This is a bullet with extra spaces after the"
             " marker.\n"
             "    Continuation line aligned to the text column.\n"
         )
         out = self.wrap(src)
-        assert out == src
+        assert out.startswith("-   ")
+        assert "\n    " in out
         self.check_all(src, out)
 
     def test_nested_constructs_in_list_item(self):
@@ -155,6 +158,21 @@ class TestListItems(BaseTest):
         assert "``inline code``" in out
         assert ":ref:`long_reference_name`" in out
         self.check_all(src, out)
+
+    def test_nested_bullet_not_merged_into_parent(self):
+        # Regression: when a parent bullet item is immediately
+        # followed (no blank line) by a nested bullet at a deeper
+        # indent, ``_handle_list_run`` slurped the nested line into
+        # the parent's continuation buffer, producing
+        # ``- Parent. - Nested.`` on a single line and visibly
+        # destroying the bullet structure. The source is malformed
+        # RST (a nested list needs a blank line above), but docutils
+        # parses it leniently and the tool must not make the output
+        # worse than the input. Triggers under ``join=True`` (the
+        # CLI default), where multi-line items get re-flowed.
+        src = "- Parent line short.\n  - Nested item.\n"
+        out = self.wrap(src)
+        assert out == src
 
     def test_bullet_with_long_hyperlink_continuation_not_lengthened(self):
         # A bullet whose continuation contains a long hyperlink that was

@@ -144,7 +144,7 @@ def extract_code_blocks(text):
 
 class BaseTest:
     WIDTH = 79
-    JOIN = False
+    JOIN = True
 
     def wrap(self, source, width=None):
         if width is None:
