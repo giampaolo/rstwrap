@@ -87,10 +87,8 @@ def _colorize_diff(lines):
 # Inline-token recognition
 # ---------------------------------------------------------------------------
 
-# Inline RST constructs that must NEVER be broken across lines. Order
-# matters: longer / more specific alternatives come first so the regex
-# engine matches them in preference to shorter ones at the same
-# position. Each alternative is anchored at a non-space position.
+# Inline RST constructs that must never be broken across lines.
+# Longer alternatives come first so the regex prefers them.
 _INLINE_PATTERNS = [
     # ``inline literal`` (may contain spaces)
     r"``.+?``",
@@ -117,11 +115,8 @@ _PLACEHOLDER_RE = re.compile(r"\x00T(\d+)\x00")
 
 
 def _protect_inline(text):
-    """Mask inline RST constructs that contain internal whitespace.
-
-    Returns (masked_text, placeholders). Constructs without any
-    internal whitespace are left alone -- they are already atomic
-    under whitespace-based splitting.
+    """Mask inline RST constructs containing whitespace so they
+    survive whitespace-based splitting. Returns (masked, placeholders).
     """
     placeholders = {}
     counter = [0]
@@ -161,11 +156,8 @@ def _visual_len(token, placeholders):
 
 
 def _collapse_spaces(text):
-    """Collapse redundant internal spaces in prose text.
-
-    Spaces inside inline RST constructs (``like  this``, *two  words*)
-    are intentional and left intact. Spaces between words in plain prose
-    are normalized to a single space.
+    """``hello  world`` -> ``hello world``. Spaces inside inline
+    constructs (``like  this``, *two  words*) are left intact.
     """
     masked, placeholders = _protect_inline(text)
     masked = re.sub(r"  +", " ", masked)
@@ -210,12 +202,9 @@ def _wrap_paragraph(text, width, initial_indent="", subsequent_indent=""):
 _UNDERLINE_CHARS = frozenset(string.punctuation)
 
 # Directive with ``::`` terminator. Optional domain prefix (``py:``,
-# ``c:``, ...). Group 1 is the bare directive name (used for the
-# prose-body whitelist below).
-# The trailing ``(?=\s|$)`` lookahead matters: docutils only treats
-# ``.. NAME::`` as a directive when ``::`` is followed by whitespace
-# or end-of-line. ``.. note::hello`` and ``.. note:::ref:`x``` are
-# parsed as comments, not directives. See docs/internal/rst_rules.md.
+# ``c:``). Group 1 is the bare name. The trailing ``(?=\s|$)`` matters:
+# ``.. note::hello`` is parsed as a comment by docutils, not a directive
+# (see docs/internal/rst_rules.md).
 _DIRECTIVE_RE = re.compile(r"^\.\.\s+(?:[\w-]+:)?([\w-]+)::(?=\s|$)")
 
 # Directives whose body is prose (and therefore wrappable). Anything
@@ -295,12 +284,8 @@ def _is_underline(line):
 
 
 def _is_short_underline(line):
-    """True if the line is a 1-2 char section underline (e.g. ``--``
-    under a 2-letter module name like ``io``, or ``-`` under a 1-letter
-    title like ``R``).
-
-    Excludes ``::``, ``..``, and bare ``:`` / ``.`` which have
-    dedicated meanings elsewhere.
+    """True for 1-2 char underlines (``--`` under ``io``, ``-``
+    under ``R``). Excludes ``::``, ``..``, ``:``, ``.``.
     """
     s = line.rstrip()
     if len(s) not in {1, 2} or s in {"::", "..", ":", "."}:
@@ -309,12 +294,10 @@ def _is_short_underline(line):
     return c in _UNDERLINE_CHARS and all(ch == c for ch in s)
 
 
-# Field list item: ':field name: value'. Field names may contain spaces
-# (e.g. ':type exc_info:') and inline markup including inline literals
-# (e.g. ':``p_vaddr``: segment virtual address'). Disambiguation from
-# ':role:`text`' inline markup is handled by the trailing ``(?:\s|$)``:
-# a field list has a space (or end of line) after the closing colon,
-# while a role is immediately followed by a backtick.
+# Field list item: ``:field name: value``. Names may contain spaces
+# and inline markup (``:type exc_info:``, ``:``p_vaddr``: ...``). The
+# trailing ``(?:\s|$)`` disambiguates from ``:role:`text``` (a role
+# is followed by a backtick, not whitespace/EOL).
 _FIELD_LIST_RE = re.compile(r"^:[^:\n]+:(?:\s|$)")
 
 # RST option list item: short option (-x, -x ARG) or long option
@@ -387,12 +370,9 @@ def _handle_directive(lines, i, n, width, join):
 
 
 def _handle_simple_table(lines, i, n):
-    """Collect a simple-table block verbatim (border to closing border).
-
-    A simple table may contain a nested simple table inside one of its
-    cells; the nested table's closing border is indented relative to
-    the outer table. Only a same-indent border followed by a blank
-    line counts as the outer closer.
+    """Collect a simple table verbatim (border to closing border).
+    Only a same-indent border followed by a blank line closes the
+    outer table; deeper-indented borders belong to a nested table.
     """
     open_indent = len(lines[i]) - len(lines[i].lstrip(" \t"))
     emitted = [lines[i]]
@@ -411,13 +391,9 @@ def _handle_simple_table(lines, i, n):
 
 
 def _handle_quoted_literal_block(lines, i, n):
-    """Collect a quoted literal block verbatim.
-
-    A quoted literal block follows a paragraph ending in ``::`` (same
-    as a regular literal block), but its body is unindented: every line
-    begins with the same non-alphanumeric, non-whitespace quoting
-    character. Docutils treats the whole run as literal; we must pass
-    it through without wrapping or merging.
+    """Collect a quoted literal block verbatim. Unindented body after
+    ``::``, every line starting with the same non-alnum quote char.
+    Docutils treats the run as literal.
     """
     quote_char = lines[i][0]
     emitted = []
@@ -428,11 +404,8 @@ def _handle_quoted_literal_block(lines, i, n):
 
 
 def _handle_doctest(lines, i, n):
-    """Collect a doctest block verbatim.
-
-    A doctest block is a run of ``>>>`` prompts, ``...`` continuation
-    lines, and interleaved output lines. It ends at the first blank
-    line.
+    """Collect a doctest block verbatim (``>>>`` / ``...`` / output
+    lines, ending at the first blank line).
     """
     emitted = []
     while i < n and lines[i].strip():
@@ -450,14 +423,10 @@ def _prev_nonblank_ends_with_colons(out):
 
 
 def _prev_block_is_opaque(out, current_indent):
-    """True if the current indented block is the body of an opaque
-    construct (literal block ``::``, or explicit markup ``..``)
-    and must not be reshaped as a nested list.
-
-    Walks *out* backward with a decreasing indent watermark so an
-    introducer at col 0 is still found below a non-opaque line at
-    an intermediate indent (e.g. col-3 prose + col-4 enum-shaped
-    text, all one ``::`` block).
+    """True if the current indented block is the body of a ``::``
+    literal or ``..`` explicit-markup introducer (never reshape).
+    Walks backward with a decreasing indent watermark so an introducer
+    at col 0 is still found under intermediate-indent lines.
     """
     min_indent = current_indent
     for ln in reversed(out):
@@ -477,14 +446,10 @@ def _prev_block_is_opaque(out, current_indent):
 
 def _handle_list_run(lines, i, n, width, join):
     """Wrap a run of sibling list items at the same indent level.
-
-    A "run" is a sequence of consecutive bullets with no blank line
-    between them. Each item's continuation lines (indented exactly to
-    the text column) are joined into the item's paragraph and
-    re-wrapped. Items are kept verbatim when they already fit or when a
-    visually-aligned continuation follows immediately (deeper indent
-    with no blank line -- wrapping would cause "Unexpected indentation"
-    in docutils).
+    Continuation lines indented to the text column are joined into
+    the item's paragraph and re-wrapped. Items stay verbatim when they
+    fit, or when a deeper-indent line follows with no blank between
+    (wrapping would cause "Unexpected indentation" in docutils).
     """
     list_indent = _match_list_item(lines[i])[0]
     emitted = []
@@ -493,10 +458,9 @@ def _handle_list_run(lines, i, n, width, join):
         if not li or li[0] != list_indent:
             break
         _, bullet, rest = li
-        # Preserve the source's exact spacing between bullet and text.
-        # ``*  foo`` (two spaces) has text column 3; our output must
-        # keep that column so nested content at col 2 stays parsed as
-        # a separate block rather than becoming a nested list item.
+        # Preserve the bullet-to-text column. ``*  foo`` (col 3) must
+        # stay col 3 so nested content at col 2 keeps parsing as a
+        # separate block instead of a nested list item.
         text_col = len(lines[i]) - len(rest)
         buf = [rest]
         j = i + 1
@@ -505,42 +469,31 @@ def _handle_list_run(lines, i, n, width, join):
             if not nxt.strip():
                 break
             nxt_indent = len(nxt) - len(nxt.lstrip(" "))
-            # Continuation must be indented to *exactly* the text
-            # column. Deeper indent starts a nested structure (block
-            # quote, nested paragraph, definition list) that docutils
-            # parses separately.
+            # Continuation must be at *exactly* the text column.
+            # Deeper indent starts a nested block docutils parses
+            # separately.
             if nxt_indent != text_col:
                 break
-            # Break on any list-item-shaped continuation, not just
-            # siblings. A deeper-indent bullet at text_col is either
-            # a (malformed, no-blank-line) nested list or accidental
-            # bullet-prefixed prose; docutils parses both as part of
-            # the parent paragraph, but joining them onto one line
-            # visibly destroys the source's bullet structure. Letting
-            # the line fall through to the outer dispatch's verbatim-
-            # indented branch preserves both the doctree and the
-            # visible shape.
+            # A list-item-shaped continuation at text_col is either a
+            # malformed nested list or bullet-prefixed prose. Joining
+            # would destroy the visible bullet structure; break and let
+            # the outer dispatch pass it through verbatim.
             nxt_li = _match_list_item(nxt)
             if nxt_li:
                 break
             buf.append(nxt.strip())
             j += 1
         original = [lines[i], *lines[i + 1 : j]]
-        # Fidelity guard: keep verbatim if already fits, or if a
-        # visually-aligned over-indented line follows immediately
-        # (splitting the item would orphan it without a blank line,
-        # causing "Unexpected indentation" in docutils).
+        # Keep verbatim if a deeper-indented line follows with no blank
+        # (splitting would trigger "Unexpected indentation" in docutils).
         next_raw = lines[j] if j < n else ""
         next_indent = len(next_raw) - len(next_raw.lstrip(" "))
         visually_attached = bool(next_raw.strip()) and next_indent > text_col
-        # Prose-ambiguity guard (enum lists only): a numbered marker
-        # followed by a non-blank line at the list's own indent (less
-        # than text_col) that is not a sibling list item is parsed by
-        # docutils as a paragraph starting with "N.", not as an enum
-        # list. Bullet lists don't have this ambiguity -- docutils
-        # always parses ``*``/``-``/``+`` as a list. Wrapping in the
-        # ambiguous case would create a well-formed enum list and
-        # change the doctree; keep verbatim instead.
+        # Prose-ambiguity (enum only): ``N.`` followed by a non-sibling
+        # line at the list's own indent parses as a paragraph starting
+        # with ``N.``, not an enum list. Wrapping would turn it into a
+        # real enum and change the doctree. Bullets have no such
+        # ambiguity. Keep verbatim.
         nxt_li = _match_list_item(next_raw)
         prose_ambiguity = (
             bullet not in {"-", "*", "+"}
@@ -551,10 +504,8 @@ def _handle_list_run(lines, i, n, width, join):
         fits_verbatim = all(len(ln) <= width for ln in original) and not (
             join and len(original) > 1
         )
-        # Line-block body: the item's body is an RST line block (each
-        # line prefixed with ``|``). Merging those lines into a single
-        # paragraph destroys the ``<line_block>`` structure, so always
-        # keep such items verbatim regardless of width or ``--join``.
+        # Line-block body (``|`` prefix on each line): merging would
+        # destroy the ``<line_block>`` structure. Always verbatim.
         line_block_body = rest.startswith("| ") or rest == "|"
         if (
             fits_verbatim
@@ -564,21 +515,18 @@ def _handle_list_run(lines, i, n, width, join):
         ):
             emitted.extend(original)
         else:
-            # Use the source's exact prefix (including its original
-            # bullet-to-text spacing) so the text column is preserved.
+            # Keep the source prefix verbatim to preserve the text
+            # column. For the subsequent indent, replace bullet chars
+            # with spaces but keep whitespace (notably tabs): a source
+            # like ``-<TAB>text`` has text column 8, and two spaces
+            # would make docutils parse continuations as block_quote.
             initial = lines[i][:text_col]
-            # For the subsequent indent, replace the bullet chars with
-            # spaces but keep whitespace characters (notably tabs) from
-            # the prefix. A source like ``-<TAB>text`` has text column 8
-            # after tab expansion; emitting two spaces instead would
-            # make docutils parse the continuation as a block_quote.
             subsequent = re.sub(r"\S", " ", initial)
             joined = " ".join(buf)
             wrapped = _wrap_paragraph(joined, width, initial, subsequent)
             candidate = wrapped.split("\n")
-            # No-lengthen guard: if wrapping would produce a line longer
-            # than width (e.g. because a long inline token such as a
-            # hyperlink cannot be split), keep the original verbatim.
+            # No-lengthen: if wrapping still produces an over-width
+            # line (unsplittable token like a long hyperlink), verbatim.
             if any(len(ln) > width for ln in candidate):
                 emitted.extend(original)
             else:
@@ -617,18 +565,14 @@ def _handle_prose(lines, i, n, width, join):
         # its own line -- merging it turns '::' into ':' in the output.
         if nxt.strip() == "::":
             break
-        # A line matching the bullet pattern inside a paragraph (no
-        # preceding blank) is prose continuation, not a new list item.
+        # A bullet-shaped line inside a paragraph (no preceding
+        # blank) is prose continuation, not a new list item.
         buf.append(nxt)
         j += 1
-    # Indented-follow guard: if the paragraph is immediately followed
-    # (no blank line between) by an indented non-blank line, docutils
-    # parses it as ``paragraph + block_quote`` when the paragraph is
-    # multi-line, but as ``definition_list`` when it is single-line.
-    # Merging or re-wrapping to a different line count would flip that
-    # interpretation, so keep the paragraph verbatim. Triggers on
-    # malformed RST (valid RST has a blank line before indented
-    # content), but the doctree invariant must still hold.
+    # Indented-follow guard: an indented non-blank line with no blank
+    # between parses as ``paragraph + block_quote`` when multi-line,
+    # ``definition_list`` when single-line. Changing the line count
+    # would flip that; keep verbatim.
     indented_follow = (
         j < n and lines[j][:1] in {" ", "\t"} and lines[j].strip()
     )
@@ -636,10 +580,8 @@ def _handle_prose(lines, i, n, width, join):
         return buf, j
     joined = " ".join(s.strip() for s in buf)
     normalized = _collapse_spaces(joined)
-    # Fidelity guard: keep verbatim only if the paragraph already fits
-    # *and* has no redundant spaces to normalize. In join mode a
-    # multi-line paragraph is always re-wrapped so short consecutive
-    # lines merge onto one.
+    # Verbatim only when the paragraph fits and has no double-spaces
+    # to collapse. In join mode a multi-line paragraph always re-wraps.
     fits_verbatim = (
         normalized == joined
         and all(len(ln) <= width for ln in buf)
@@ -649,9 +591,8 @@ def _handle_prose(lines, i, n, width, join):
         return buf, j
     wrapped = _wrap_paragraph(normalized, width, "", "")
     candidate = wrapped.split("\n")
-    # No-lengthen guard: if wrapping would produce a line longer than
-    # width (e.g. because a long inline token such as a hyperlink or
-    # role cannot be split), keep the original verbatim.
+    # No-lengthen: if an unsplittable token leaves an over-width line,
+    # keep the original verbatim.
     if any(len(ln) > width for ln in candidate):
         return buf, j
     return candidate, j
@@ -663,19 +604,13 @@ def _handle_prose(lines, i, n, width, join):
 
 
 def _prepare_lines(source):
-    """Split *source* into lines and strip trailing whitespace.
-
-    Trailing whitespace is never meaningful in RST (the doctree
-    ignores it) and stripping here means downstream handlers can't
-    accidentally preserve it.
+    """Split *source* into lines and rstrip each (trailing whitespace
+    is never meaningful in RST).
     """
     lines = [ln.rstrip() for ln in source.splitlines()]
-    # Edge case: if the source ends with a whitespace-only "line"
-    # without a terminating newline (e.g. ``"foo\n   "``), splitlines
-    # produces a trailing ``"   "`` which we rstrip to ``""``. When
-    # joined with ``\n`` that empty tail would introduce a trailing
-    # newline the source didn't have. Drop empty trailing lines in
-    # that case so the trailing-newline presence is preserved.
+    # If the source has no terminating newline but a trailing
+    # whitespace-only line, rstripping it to "" would reintroduce a
+    # trailing newline on rejoin. Drop empty tails in that case.
     if not source.endswith("\n"):
         while lines and not lines[-1]:
             lines.pop()
@@ -683,32 +618,26 @@ def _prepare_lines(source):
 
 
 def _try_verbatim(raw, stripped, lines, i, n):
-    """Check if line *i* should pass through unchanged.
-
-    Returns ``(emitted_lines, new_i)`` when the line (or pair of lines,
-    for section titles) is a verbatim passthrough, or ``None`` when the
-    caller should try handler dispatch instead.
+    """Return ``(emitted, new_i)`` if line *i* passes through
+    unchanged (one line, or two for section title+underline), else
+    ``None`` and let the caller dispatch.
     """
     # Blank line.
     if not stripped:
         return [raw], i + 1
 
-    # Indented line: literal block, directive body, nested content,
-    # block quote. (Indented list items are not wrapped; see
-    # _handle_list_run for why.)
+    # Indented line: literal block, directive body, block quote,
+    # nested content. (Indented list items: see _handle_list_run.)
     if raw[:1] in {" ", "\t"}:
         return [raw], i + 1
 
-    # Anonymous hyperlink target: ``__ URL``. Must be preserved
-    # verbatim -- joining it into surrounding prose would turn the
-    # target definition into garbled text.
+    # Anonymous hyperlink target ``__ URL`` -- joining into prose
+    # would garble the target definition.
     if stripped.startswith("__ "):
         return [raw], i + 1
 
-    # Section title followed by an underline of equal/greater
-    # length. Both standard underlines (>=3 chars) and 2-char
-    # underlines (e.g. ``--`` under a 2-letter title like ``CF``)
-    # are accepted.
+    # Section title + underline (standard >=3 chars, or 2-char like
+    # ``--`` under a 2-letter title).
     if i + 1 < n and (
         _is_underline(lines[i + 1]) or _is_short_underline(lines[i + 1])
     ):
@@ -716,13 +645,12 @@ def _try_verbatim(raw, stripped, lines, i, n):
         if len(ul) >= len(stripped):
             return [raw, lines[i + 1]], i + 2
 
-    # Bare underline (overline already handled above).
+    # Bare underline.
     if _is_underline(raw):
         return [raw], i + 1
 
-    # Bare 2-char underline on its own line (e.g. ``==`` overline
-    # preceding a short title like ``rv``). Without this passthrough
-    # the line falls into prose and merges with the title.
+    # Bare 2-char underline alone on its line (e.g. ``==`` overline
+    # preceding ``rv``). Without this it would merge into prose.
     if _is_short_underline(raw):
         return [raw], i + 1
 
@@ -742,20 +670,13 @@ def _try_verbatim(raw, stripped, lines, i, n):
 
 
 def _rewrite_blocks(lines, width, join):
-    """Classify each block and wrap prose paragraphs.
-
-    This is the core dispatch loop: it walks *lines*, identifies the
-    RST construct each line belongs to, and either passes the block
-    through verbatim or delegates to a ``_handle_*`` function that
-    re-wraps it. Returns ``(out, protected)`` where *out* is the list
-    of output lines and *protected* is the set of indices in *out* that
-    belong to verbatim blocks whose content must never be modified by
-    later formatting passes (e.g. simple tables).
+    """Core dispatch loop. Walk *lines*, classify each block, and
+    either pass it through verbatim or delegate to a ``_handle_*``
+    function. Returns ``(out, protected)`` where *protected* is the
+    set of ``out`` indices in simple-table blocks (never mutated by
+    later passes).
     """
     out = []
-    # Indices in ``out`` that come from simple-table blocks, whose
-    # internal blank lines (between row groups) must never be
-    # collapsed by the later ``_collapse_blank_lines`` pass.
     protected = set()
     i = 0
     n = len(lines)
@@ -774,18 +695,13 @@ def _rewrite_blocks(lines, width, join):
             or out[-1][:1] in {" ", "\t"}
         )
 
-        # Indented bullet at a block boundary = nested list
-        # (docutils: <bullet_list> in <list_item>, or
-        # block_quote > bullet_list otherwise). Dispatch before
-        # _try_verbatim swallows it. Guards:
-        #  - blank-or-start prev line (broader at_block_start
-        #    mis-fires on bullet-shaped continuations inside
-        #    literal bodies, prose + ``*`` no-blank, ``+``-prefix
-        #    ASCII tables);
-        #  - space indent only (tab indent hits a pre-existing
-        #    bug in _handle_list_run.visually_attached that
-        #    flips the doctree on multi-line parents);
-        #  - opaque context: see _prev_block_is_opaque.
+        # Indented bullet at a block boundary = nested list. Dispatch
+        # before _try_verbatim swallows it. Guards: blank-or-start prev
+        # line (at_block_start is too broad and mis-fires on bullet-
+        # shaped continuations inside literals / prose / ASCII tables);
+        # space indent only (tab hits a visually_attached bug that
+        # flips the doctree on multi-line parents); not in an opaque
+        # block (see _prev_block_is_opaque).
         nested_at_block_start = not out or not out[-1].strip()
         current_indent = len(raw) - len(raw.lstrip(" \t"))
         if (
@@ -821,13 +737,10 @@ def _rewrite_blocks(lines, width, join):
             protected.update(range(start, len(out)))
             continue
 
-        # Quoted literal block: unindented body introduced by ``::``
-        # in the previous paragraph, every line starting with the same
-        # non-alphanumeric, non-whitespace quoting character. Pass the
-        # run through verbatim -- docutils treats it as literal. This
-        # must come *before* the list-item dispatch because docutils
-        # treats ``*``/``-``/``+`` after ``::`` as a quoted literal
-        # block, not as a bullet list.
+        # Quoted literal block: unindented body after a ``::`` line,
+        # every line starting with the same non-alnum quote char. Must
+        # come before the list dispatch -- ``*``/``-``/``+`` after
+        # ``::`` are quoted literal, not a bullet list.
         first = stripped[0]
         if (
             first.isprintable()
@@ -839,22 +752,17 @@ def _rewrite_blocks(lines, width, join):
             out.extend(emitted)
             continue
 
-        # List item run (bullet or enumerated). Recognised at block
-        # boundaries: blank line, section underline, or after indented
-        # content (nested body, continuation paragraph). A bullet that
-        # directly follows unindented prose is a line-wrap continuation,
-        # not a new list. The block-boundary predicate is computed
-        # once at the top of the loop and reused here.
+        # List item run (bullet or enumerated) at a block boundary.
+        # A bullet directly after unindented prose is a line-wrap
+        # continuation, not a new list -- hence at_block_start.
         if at_block_start and _match_list_item(raw):
             emitted, i = _handle_list_run(lines, i, n, width, join)
             out.extend(emitted)
             continue
 
-        # Definition-list term: unindented line immediately followed by
-        # an indented line with no blank between. Wrapping the term
-        # would create two separate terms in the parsed document. The
-        # body (indented lines) is handled verbatim by the indented-
-        # block branch above.
+        # Definition-list term: unindented line with an indented line
+        # right after (no blank). Wrapping would split it into two
+        # separate terms. The indented body is handled verbatim above.
         if (
             i + 1 < n
             and lines[i + 1][:1] in {" ", "\t"}
@@ -878,14 +786,10 @@ def _rewrite_blocks(lines, width, join):
 
 
 def _collapse_blank_lines(out, protected):
-    """Collapse consecutive blank lines into one.
-
-    Blanks are preserved inside indented blocks (literal blocks, code
-    blocks, directive bodies) and protected blocks (simple tables).
-    The rule: when a duplicate blank is encountered, peek ahead to
-    the next non-blank line. If it is indented, the blanks lead into
-    (or sit inside) indented content and must be kept; otherwise
-    collapse.
+    """Collapse consecutive blank lines into one. Blanks are kept
+    inside indented blocks and protected blocks (simple tables).
+    Rule: on a duplicate blank, peek ahead -- collapse unless the
+    next non-blank line is indented.
     """
     collapsed = []
     for idx, ln in enumerate(out):
@@ -912,21 +816,19 @@ def _collapse_blank_lines(out, protected):
 
 
 def _finalize(out, source):
-    """Join output lines and restore the trailing newline if needed."""
+    """Join output lines, restoring the trailing newline if the
+    source had one (splitlines/join is asymmetric by one separator).
+    """
     result = "\n".join(out)
-    # splitlines() + '\n'.join() is asymmetric by exactly one trailing
-    # separator: restore it so trailing blank lines are identical.
     if source.endswith("\n"):
         result += "\n"
     return result
 
 
 def wrap_rst(source, width=WIDTH, join=True):
-    """Wrap prose paragraphs to *width* and remove double spaces.
-
-    With *join* True, short consecutive lines inside a prose paragraph
-    or list item are merged onto one line (up to the target width).
-    Default False preserves the existing line breaks.
+    """Wrap prose paragraphs to *width* and collapse double spaces.
+    With *join* True, short consecutive lines in a paragraph / list
+    item merge onto one (up to the target width).
     """
     lines = _prepare_lines(source)
     out, protected = _rewrite_blocks(lines, width, join)
@@ -940,10 +842,8 @@ def wrap_rst(source, width=WIDTH, join=True):
 
 
 class DoctreeParseError(Exception):
-    """Raised by :func:`_doctree_diff` when docutils fails to parse
-    the input RST (internal ``KeyError``, malformed reference, etc.).
-    Callers must treat it as "cannot verify" -- ``--safe`` refuses to
-    write and tests skip rather than erroring out.
+    """Raised when docutils fails to parse the RST. Callers treat it
+    as "cannot verify": ``--safe`` refuses to write; tests skip.
     """
 
 
@@ -977,15 +877,10 @@ def _parse_rst(text):
 
 
 def _doctree_diff(src, dst, src_tree=None, dst_tree=None):
-    """Return a short unified diff if the doctrees of *src* and *dst*
-    differ, otherwise ``None``.
-
-    Pre-parsed trees can be passed via *src_tree* / *dst_tree* to avoid
-    redundant parsing. The trees are deep-copied before normalization,
-    so the caller's originals are not mutated.
-
-    Used by the ``--safe`` post-check. Raises `DoctreeParseError` if
-    docutils fails to parse either text.
+    """Return a short unified diff if the doctrees differ, else
+    ``None``. Pre-parsed trees can be passed in to skip reparsing;
+    trees are deep-copied before normalization. Raises
+    `DoctreeParseError` on parse failure.
     """
     import copy
 
@@ -998,9 +893,8 @@ def _doctree_diff(src, dst, src_tree=None, dst_tree=None):
 
     def _norm(tree):
         tree = copy.deepcopy(tree)
-        # ``findall`` returns a generator; removing/replacing nodes
-        # during iteration causes the traversal to skip siblings.
-        # Materialize before mutating.
+        # Materialize before mutating -- removing nodes during
+        # ``findall`` iteration skips siblings.
         for node in list(tree.findall(docutils.nodes.system_message)):
             node.parent.remove(node)
         for node in tree.findall(docutils.nodes.Element):
@@ -1029,11 +923,8 @@ def _doctree_diff(src, dst, src_tree=None, dst_tree=None):
 
 
 def _collect_rst_files(path):
-    """Return a list of .rst files for *path*.
-
-    If *path* is a file, return it as-is (a single-element list).
-    If *path* is a directory, recursively collect all .rst files,
-    skipping subdirectories whose name is in IGNORED_DIRS.
+    """Yield .rst files under *path*. A file is returned as-is; a
+    directory is walked recursively, skipping IGNORED_DIRS.
     """
     if path.is_file():
         yield path
@@ -1050,9 +941,8 @@ def _collect_rst_files(path):
 
 
 def _safety_check_failed(src, dst, label):
-    """Run ``--safe`` post-check; on doctree mismatch or parse error,
-    emit stderr diagnostics and return True so the caller can skip
-    writing.
+    """Run the ``--safe`` post-check. On mismatch or parse error,
+    print diagnostics and return True (caller should skip writing).
     """
     if not SAFE or src == dst:
         return False
@@ -1138,17 +1028,14 @@ def _process_stdin():
         return changed, False
     if CHECK:
         return changed, False
-    # Always write to stdout so that editor integrations (which
-    # replace the buffer with stdout) don't blank the view when the
-    # file is already clean.
+    # Always write to stdout: editor integrations replace the buffer
+    # with it and would blank the view for an already-clean file.
     sys.stdout.write(dst)
     return changed, False
 
 
-# Options that ``[tool.rstwrap]`` in pyproject.toml may set,
-# mapped to the type each value must have. ``check`` and ``diff`` are
-# intentionally CLI-only -- they're per-invocation flags, not project
-# policy.
+# ``[tool.rstwrap]`` keys and their expected types. ``check`` /
+# ``diff`` are CLI-only (per-invocation flags, not project policy).
 _VALID_PYPROJECT_KEYS = {
     "width": int,
     "join": bool,
@@ -1174,11 +1061,8 @@ def _config_error(msg):
 
 def _load_pyproject_config():
     """Return validated options from ``[tool.rstwrap]`` in the
-    nearest pyproject.toml, or an empty dict if none is found.
-
-    Unknown keys and wrong-typed values are fatal: print an error to
-    stderr and exit with code 2. This catches typos early instead of
-    silently ignoring them.
+    nearest pyproject.toml, or ``{}``. Unknown keys or wrong types
+    exit with code 2.
     """
     path = _find_pyproject_toml()
     if path is None:
@@ -1338,8 +1222,7 @@ def main(args=None):
         else:
             n_unchanged += 1
 
-    # Summary on multi-file runs (skipped under --quiet, --diff, and
-    # for single-file invocations where the per-file output is enough).
+    # Multi-file summary (skipped under --quiet, --diff, single-file).
     if len(PATHS) > 1 and not QUIET and not DIFF:
         verb = "would be reformatted" if CHECK else "reformatted"
         parts = [f"{n_changed} {verb}", f"{n_unchanged} unchanged"]
