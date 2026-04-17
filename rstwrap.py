@@ -485,8 +485,17 @@ def _handle_list_run(lines, i, n, width, join):
             # parses separately.
             if nxt_indent != text_col:
                 break
+            # Break on any list-item-shaped continuation, not just
+            # siblings. A deeper-indent bullet at text_col is either
+            # a (malformed, no-blank-line) nested list or accidental
+            # bullet-prefixed prose; docutils parses both as part of
+            # the parent paragraph, but joining them onto one line
+            # visibly destroys the source's bullet structure. Letting
+            # the line fall through to the outer dispatch's verbatim-
+            # indented branch preserves both the doctree and the
+            # visible shape.
             nxt_li = _match_list_item(nxt)
-            if nxt_li and nxt_li[0] == list_indent:
+            if nxt_li:
                 break
             buf.append(nxt.strip())
             j += 1
